@@ -40,6 +40,7 @@ export default function TasksPage() {
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [formSubjectId, setFormSubjectId] = useState<number>(SUBJECTS[0].id)
   const [formTitle, setFormTitle] = useState('')
   const [formDueDate, setFormDueDate] = useState('')
@@ -105,8 +106,8 @@ export default function TasksPage() {
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formTitle.trim()) return
-
     setSubmitting(true)
+    setCreateError(null)
     try {
       let payload: any = {
         table: activeTab,
@@ -139,15 +140,29 @@ export default function TasksPage() {
         body: JSON.stringify(payload),
       })
 
-      if (res.ok) {
+      const resData = await res.json()
+
+      if (res.ok && resData.success) {
+        // Optimistic update — add immediately to UI
+        const newItem = resData.data?.[0] || { ...payload, id: Date.now(), created_at: new Date().toISOString() }
+        setData((prev) => ({
+          ...prev,
+          [activeTab]: [newItem, ...(prev as any)[activeTab]],
+        }))
         setShowAddModal(false)
         setFormTitle('')
         setFormNotes('')
         setFormDueDate('')
-        fetchTasks()
+        // Also refetch to sync
+        setTimeout(() => fetchTasks(), 500)
+      } else {
+        const errMsg = resData?.error || 'حدث خطأ غير متوقع'
+        setCreateError(errMsg)
+        console.error('Create item API error:', errMsg)
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Create item error:', e)
+      setCreateError(e?.message || 'فشل الاتصال بالسيرفر')
     } finally {
       setSubmitting(false)
     }
@@ -545,7 +560,7 @@ export default function TasksPage() {
                     : 'إضافة محاضرة / حصة'}
                 </h3>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => { setShowAddModal(false); setCreateError(null) }}
                   className="p-1.5 rounded-xl glass text-slate-400 hover:text-white"
                 >
                   <X size={16} />
@@ -621,6 +636,13 @@ export default function TasksPage() {
                       onChange={(e) => setFormDueDate(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-indigo-500 font-mono"
                     />
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {createError && (
+                  <div className="w-full p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold text-center">
+                    ❌ {createError}
                   </div>
                 )}
 
