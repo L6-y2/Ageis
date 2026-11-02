@@ -90,8 +90,33 @@ function TimerContent() {
   const [isZenMode, setIsZenMode] = useState(false)
   const [completedCycles, setCompletedCycles] = useState(0)
 
+  // Database Connection States
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null)
+  const [sessionLoading, setSessionLoading] = useState(false)
+  const [sessionStats, setSessionStats] = useState<{
+    streak?: number
+    hours?: number
+    message?: string
+    rewards?: string[]
+  } | null>(null)
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const subject = SUBJECTS.find((s) => s.id === selectedSubject) || SUBJECTS[0]
+
+  // Check for any dangling active session on mount
+  useEffect(() => {
+    fetch('/api/session')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.activeSession?.id) {
+          setActiveSessionId(res.activeSession.id)
+          if (res.activeSession.subject_id) {
+            setSelectedSubject(res.activeSession.subject_id)
+          }
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Dial Geometry
   const radius = 115
@@ -123,41 +148,65 @@ function TimerContent() {
     }
   }
 
-  const saveSession = async (mins: number) => {
-    try {
-      const res = await fetch('/api/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subjectId: selectedSubject,
-          durationMinutes: mins,
-        }),
-      })
-      if (res.ok) {
-        setEarnedXp(estXpReward)
-        setCompletedCycles((prev) => prev + 1)
-      }
-    } catch (err) {
-      console.error('Save session error:', err)
+  // ─── Complete and Log Session to Database ────────────────────────────────
+  const completeSession = useCallback(async () => {
+    setRunning(false)
+    setFinished(true)
+    if (soundEnabled) {
+      playSound(mode === 'focus' ? 'complete' : 'break')
     }
-  }
 
-  // Ticking logic
+    if (mode === 'focus') {
+      triggerConfetti()
+      setSessionLoading(true)
+      try {
+        const res = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'end',
+            sessionId: activeSessionId,
+            notes: sessionGoal || 'جلسة بومودورو مكتملة',
+          }),
+        })
+        const json = await res.json()
+        const data = json?.data
+        if (data && data.success) {
+          const mins = data.duration_minutes || Math.max(1, Math.round((totalSeconds - remaining) / 60))
+          const xp = Math.max(10, Math.round(mins * 1.67))
+          setEarnedXp(xp)
+          setSessionStats({
+            streak: data.current_streak,
+            hours: data.total_user_hours,
+            message: data.message,
+            rewards: data.unlocked_rewards || [],
+          })
+          setCompletedCycles((c) => c + 1)
+        } else {
+          setEarnedXp(estXpReward)
+        }
+      } catch (err) {
+        console.error('Error ending session in database:', err)
+        setEarnedXp(estXpReward)
+      } finally {
+        setSessionLoading(false)
+        setActiveSessionId(null)
+      }
+    }
+  }, [mode, soundEnabled, activeSessionId, sessionGoal, totalSeconds, remaining, estXpReward])
+
+  const completeSessionRef = useRef(completeSession)
+  useEffect(() => {
+    completeSessionRef.current = completeSession
+  }, [completeSession])
+
+  // ─── Ticking Logic ───────────────────────────────────────────────────────
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
         setRemaining((r) => {
           if (r <= 1) {
-            setRunning(false)
-            setFinished(true)
-            if (soundEnabled) {
-              playSound(mode === 'focus' ? 'complete' : 'break')
-            }
-            if (mode === 'focus') {
-              const mins = Math.round(totalSeconds / 60)
-              triggerConfetti()
-              saveSession(mins)
-            }
+            completeSessionRef.current()
             return 0
           }
           return r - 1
@@ -169,20 +218,87 @@ function TimerContent() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [running, totalSeconds, selectedSubject, mode, soundEnabled])
+  }, [running])
 
-  const reset = useCallback(() => {
+  // ─── Toggle Play / Pause & Open Session in Database ───────────────────────
+  const toggleRunning = async () => {
+    if (finished) {
+      handleReset()
+      return
+    }
+
+    if (running) {
+      setRunning(false)
+      return
+    }
+
+    // Starting focus timer: open session in database if not opened yet
+    if (mode === 'focus' && !activeSessionId) {
+      setSessionLoading(true)
+      try {
+        const res = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'start',
+            subjectId: selectedSubject,
+            notes: sessionGoal || `جلسة بومودورو ${Math.round(totalSeconds / 60)} دقيقة`,
+            energyLevel: 'high',
+          }),
+        })
+        const json = await res.json()
+        if (json?.data?.session_id) {
+          setActiveSessionId(json.data.session_id)
+        }
+      } catch (err) {
+        console.error('Failed to start session in database:', err)
+      } finally {
+        setSessionLoading(false)
+      }
+    }
+
+    setRunning(true)
+  }
+
+  // ─── Reset Timer & Cancel Active Session in Database ─────────────────────
+  const handleReset = useCallback(async () => {
+    if (activeSessionId) {
+      try {
+        fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
+        })
+      } catch (e) {
+        console.error(e)
+      }
+      setActiveSessionId(null)
+    }
     setRunning(false)
     setFinished(false)
     setEarnedXp(null)
+    setSessionStats(null)
     setRemaining(totalSeconds)
-  }, [totalSeconds])
+  }, [activeSessionId, totalSeconds])
 
   const switchMode = (newMode: TimerMode) => {
+    if (activeSessionId) {
+      try {
+        fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
+        })
+      } catch (e) {
+        console.error(e)
+      }
+      setActiveSessionId(null)
+    }
     setMode(newMode)
     setRunning(false)
     setFinished(false)
     setEarnedXp(null)
+    setSessionStats(null)
     if (newMode === 'focus') {
       setTotalSeconds(25 * 60)
       setRemaining(25 * 60)
@@ -296,7 +412,7 @@ function TimerContent() {
               key={s.id}
               onClick={() => {
                 setSelectedSubject(s.id)
-                reset()
+                handleReset()
               }}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border ${
                 selectedSubject === s.id
@@ -327,6 +443,23 @@ function TimerContent() {
               {p.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* ─── Database Sync Status Pill ───────────────────────────────────── */}
+      {mode === 'focus' && !isZenMode && (
+        <div className="flex items-center gap-2">
+          {activeSessionId ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 shadow-sm animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>جلسة نشطة مسجلة في قاعدة البيانات (#{activeSessionId})</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
+              <span>مربوط تلقائياً بـ Supabase (ساعات، ستريك، XP)</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -439,18 +572,34 @@ function TimerContent() {
                 key="done"
                 initial={{ scale: 0.85, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center px-4"
+                className="flex flex-col items-center px-4 max-w-[210px]"
               >
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-2">
-                  <CheckCircle2 size={26} />
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-1.5">
+                  <CheckCircle2 size={22} />
                 </div>
-                <h3 className="text-emerald-400 font-black text-sm">
-                  {mode === 'focus' ? 'اكتملت الجلسة بنجاح!' : 'انتهت الاستراحة! جاهز؟'}
+                <h3 className="text-emerald-400 font-black text-xs leading-tight">
+                  {mode === 'focus' ? 'تم الحفظ في قاعدة البيانات!' : 'انتهت الاستراحة!'}
                 </h3>
                 {earnedXp && (
-                  <span className="mt-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black flex items-center gap-1 shadow-sm">
-                    <Award size={14} />
-                    <span>+{earnedXp} XP تم إضافتها لحسابك</span>
+                  <span className="mt-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-black flex items-center gap-1 shadow-sm">
+                    <Award size={13} />
+                    <span>+{earnedXp} XP</span>
+                  </span>
+                )}
+                {sessionStats?.streak && (
+                  <span className="mt-1 text-[11px] font-bold text-orange-400 flex items-center gap-1">
+                    <Flame size={12} className="text-orange-400" />
+                    <span>ستريك: {sessionStats.streak} أيام 🔥</span>
+                  </span>
+                )}
+                {sessionStats?.hours && (
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    ⏱️ إجمالي: {sessionStats.hours} ساعة
+                  </span>
+                )}
+                {sessionStats?.rewards && sessionStats.rewards.length > 0 && (
+                  <span className="mt-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[9px] font-bold">
+                    🏆 {sessionStats.rewards[0]}
                   </span>
                 )}
               </motion.div>
@@ -496,11 +645,25 @@ function TimerContent() {
         </div>
       )}
 
+      {/* ─── Early Log Button (When paused with active session) ─────────────── */}
+      {!running && activeSessionId && !finished && (
+        <motion.button
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={completeSession}
+          disabled={sessionLoading}
+          className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+        >
+          <CheckCircle2 size={15} />
+          <span>إنهاء واحتساب الجلسة الآن في قاعدة البيانات</span>
+        </motion.button>
+      )}
+
       {/* ─── Tactile Instrument Controls ───────────────────────────────────── */}
       <div className="flex items-center gap-4 mt-2">
         {/* Reset Button */}
         <button
-          onClick={reset}
+          onClick={handleReset}
           className="w-12 h-12 rounded-2xl bg-[#141922] border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95 shadow-sm"
           title="إعادة ضبط المؤقت"
         >
@@ -510,13 +673,8 @@ function TimerContent() {
         {/* Master Play / Pause Trigger */}
         <motion.button
           whileTap={{ scale: 0.94 }}
-          onClick={() => {
-            if (!finished) {
-              setRunning(!running)
-            } else {
-              reset()
-            }
-          }}
+          onClick={toggleRunning}
+          disabled={sessionLoading}
           className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl transition-all ${
             running
               ? 'bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700'
@@ -524,7 +682,9 @@ function TimerContent() {
           }`}
           title={running ? 'إيقاف مؤقت' : 'بدء التركيز'}
         >
-          {running ? (
+          {sessionLoading ? (
+            <span className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : running ? (
             <Pause size={30} />
           ) : (
             <Play size={30} className="translate-x-0.5" />

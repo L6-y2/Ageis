@@ -117,9 +117,99 @@ export async function updateTopicMastery(topicId: number, masteryLevel: number) 
   return rpc('rpc_update_mastery', { p_topic_id: topicId, p_mastery_level: masteryLevel })
 }
 
-// ─── Record Completed Study Session & Award XP ─────────────────────────────
+// ─── Study Session Lifecycle (Start, End, Cancel, Active) ─────────────────
+export async function startStudySession(
+  subjectId: number,
+  notes?: string,
+  energyLevel?: string,
+  taskRefId?: number,
+  taskRefType?: string
+) {
+  try {
+    return await rpc('rpc_start_study_session', {
+      p_subject_id: subjectId,
+      p_notes: notes || null,
+      p_energy_level: energyLevel || 'medium',
+      p_task_ref_id: taskRefId || null,
+      p_task_ref_type: taskRefType || 'general',
+    })
+  } catch (err) {
+    console.error('startStudySession RPC failed, fallback to direct insert:', err)
+    // Fallback: direct insert active session
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/study_sessions`, {
+      method: 'POST',
+      headers: { ...headers, Prefer: 'return=representation' },
+      body: JSON.stringify({
+        subject_id: subjectId,
+        notes: notes || null,
+        energy_level: energyLevel || 'medium',
+        task_ref_id: taskRefId || null,
+        task_ref_type: taskRefType || 'general',
+        status: 'active',
+        start_time: new Date().toISOString(),
+      }),
+    })
+    const data = await res.json()
+    return { success: true, session_id: data?.[0]?.id, status: 'active' }
+  }
+}
+
+export async function endStudySession(sessionId?: number, notes?: string, energyLevel?: string) {
+  try {
+    return await rpc('rpc_end_study_session', {
+      p_session_id: sessionId || null,
+      p_notes: notes || null,
+      p_energy_level: energyLevel || null,
+    })
+  } catch (err) {
+    console.error('endStudySession RPC failed:', err)
+    return { success: false, error: String(err) }
+  }
+}
+
+export async function getActiveStudySession() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/study_sessions?status=eq.active&order=start_time.desc&limit=1`, {
+      headers,
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data[0] || null
+  } catch (err) {
+    console.error('getActiveStudySession failed:', err)
+    return null
+  }
+}
+
+export async function cancelStudySession(sessionId?: number) {
+  try {
+    const filter = sessionId ? `?id=eq.${sessionId}&status=eq.active` : `?status=eq.active`
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/study_sessions${filter}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        status: 'cancelled',
+        end_time: new Date().toISOString(),
+      }),
+    })
+    return res.ok
+  } catch (err) {
+    console.error('cancelStudySession failed:', err)
+    return false
+  }
+}
+
+// ─── Record Completed Study Session & Award XP (Legacy Fallback) ────────────
 export async function recordStudySession(subjectId: number, durationMinutes: number, topicId?: number) {
   try {
+    // Start and immediately end to trigger full XP, streak, and hours calculation
+    const startRes = await startStudySession(subjectId, 'جلسة بومودورو مكتملة', 'high', topicId, 'topic')
+    const sessionId = startRes?.session_id || startRes?.session?.id
+    if (sessionId) {
+      return await endStudySession(sessionId, 'تمت بنجاح')
+    }
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/study_sessions`, {
       method: 'POST',
       headers: {
