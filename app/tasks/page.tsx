@@ -52,7 +52,7 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/tasks')
+      const res = await fetch(`/api/tasks?t=${Date.now()}`, { cache: 'no-store' })
       const json = await res.json()
       setData({
         assignments: json.assignments || [],
