@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'models/gemini-3.5-flash'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'models/gemini-3-flash-preview'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://crbfhqpklruvbgcanuoo.supabase.co'
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'sb_secret_GXdyO0pA2de6jE5OxGOzaA_SKTg4odE'
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYmZocXBrbHJ1dmJnY2FudW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0Mjc4NTcsImV4cCI6MjEwOTAwMzg1N30.W8YLY_kiGqHvLs5LFDxHP0goL0vRJ18HtzdPLa0mXjY'
 
 const SYSTEM_PROMPT = `أنت "إيجيس" (Aegis)، نظام ومساعد ذكي لإدارة مذاكرة الطالب والـ Gamification.
 قواعدك الصارمة:
@@ -445,25 +445,53 @@ export async function POST(req: NextRequest) {
       },
     ]
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents,
-          generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 2500,
-          },
-        }),
-      }
-    )
+    // Format model name safely
+    const cleanModelName = GEMINI_MODEL.startsWith('models/') ? GEMINI_MODEL : `models/${GEMINI_MODEL}`
+    const candidateModels = [
+      cleanModelName,
+      'models/gemini-3-flash-preview',
+      'models/gemini-flash-lite-latest',
+      'models/gemini-flash-latest'
+    ]
+    // Deduplicate
+    const modelsToTry = Array.from(new Set(candidateModels))
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text()
-      console.error('Gemini API Error:', errText)
+    let geminiData: any = null
+    let lastError = ''
+
+    for (const modelToCall of modelsToTry) {
+      try {
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/${modelToCall}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents,
+              generationConfig: {
+                temperature: 0.6,
+                maxOutputTokens: 2500,
+              },
+            }),
+          }
+        )
+
+        if (geminiRes.ok) {
+          geminiData = await geminiRes.json()
+          break
+        } else {
+          lastError = await geminiRes.text()
+          console.error(`Gemini model ${modelToCall} failed:`, lastError)
+        }
+      } catch (err: any) {
+        lastError = err?.message || String(err)
+        console.error(`Gemini request to ${modelToCall} threw error:`, lastError)
+      }
+    }
+
+    if (!geminiData) {
+      console.error('All Gemini candidate models failed. Last error:', lastError)
       return NextResponse.json({
         reply: dbUpdateAction
           ? `✅ ${dbUpdateAction.label} (تم الحفظ في قاعدة البيانات).`
@@ -473,8 +501,6 @@ export async function POST(req: NextRequest) {
         action,
       })
     }
-
-    const geminiData = await geminiRes.json()
     const reply =
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
       (dbUpdateAction ? `✅ ${dbUpdateAction.label}` : taskAction ? `✅ ${taskAction.label}` : 'تم استلام طلبك.')
