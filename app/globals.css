@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --font-cairo: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Comfort Focus Dark Palette: Ergonomic, Zero-Glare, Soothing for Study */
+  --bg-main: #0e1217;
+  --bg-card: #151a22;
+  --bg-elevated: #1c222c;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(16, 185, 129, 0.35);
+}
+
+@theme {
+  --color-brand-primary: #10b981;
+  --color-brand-emerald: #10b981;
+  --color-brand-amber: #f59e0b;
+  --color-brand-sky: #0ea5e9;
+  --color-brand-rose: #f43f5e;
+}
+
+/* Precision Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #262f3d; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #374357; }
+
+/* Global typography */
+body {
+  font-family: var(--font-cairo);
+  background-color: var(--bg-main);
+  color: #eef2f6;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+}
+
+/* Ergonomic, calming ambient background */
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(14, 165, 233, 0.035) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.03) 0px, transparent 50%);
+}
+
+/* Premium Surface Panels */
+.panel {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+}
+
+.panel-elevated {
+  background-color: var(--bg-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+}
+
+.panel-interactive {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panel-interactive:hover {
+  background-color: #1a202a;
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.xp-shimmer {
+  background: linear-gradient(90deg, #059669 0%, #10b981 40%, #0ea5e9 70%, #059669 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite linear;
+}
+
+/* Custom chart bar styling */
+.chart-bar-bg {
+  background: rgba(255, 255, 255, 0.04);
+}
