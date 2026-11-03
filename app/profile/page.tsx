@@ -61,10 +61,13 @@ export default async function ProfilePage() {
     getRecentXpTransactions().catch(() => []),
   ])
 
-  // Exam Target countdown (15 June 2027 or target date)
-  const examDate = new Date('2027-06-15T09:00:00')
+  // Exam Target countdown — امتحان نهاية العام: 12 يونيو 2027
+  const examDate = new Date('2027-06-12T09:00:00')
   const now = new Date()
-  const diffDays = Math.max(0, Math.ceil((examDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  const diffMs = examDate.getTime() - now.getTime()
+  const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+  const diffMonths = Math.floor(diffDays / 30)
+  const remainDays = diffDays % 30
 
   const levels = [
     { lvl: 1, title: 'مبتدئ 🛡️', xp: '0 - 100' },
@@ -131,7 +134,7 @@ export default async function ProfilePage() {
         </div>
 
         {/* Exam Countdown Card */}
-        <div className="glass-card rounded-3xl p-5 border border-slate-800 flex items-center justify-between">
+        <div className="glass-card rounded-3xl p-5 border border-amber-500/20 flex items-center justify-between bg-amber-500/5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/30">
               <Calendar size={22} />
@@ -139,11 +142,17 @@ export default async function ProfilePage() {
             <div>
               <span className="text-[11px] font-bold text-slate-400">الهدف الأكبر</span>
               <h3 className="text-sm font-black text-white">امتحانات نهاية العام</h3>
+              <span className="text-[10px] text-amber-400/70 font-bold">12 يونيو 2027</span>
             </div>
           </div>
-          <div className="text-left px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-            <span className="block text-xl font-black text-amber-400 font-mono">{diffDays}</span>
+          <div className="text-left px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 min-w-[80px] text-center">
+            <span className="block text-2xl font-black text-amber-400 font-mono leading-none">{diffDays}</span>
             <span className="text-[10px] text-slate-400 font-bold">يوم متبقي</span>
+            {diffMonths > 0 && (
+              <span className="block text-[9px] text-amber-300/60 font-mono mt-0.5">
+                {`≈ ${diffMonths}ش ${remainDays}ي`}
+              </span>
+            )}
           </div>
         </div>
 
