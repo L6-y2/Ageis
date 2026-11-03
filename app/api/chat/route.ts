@@ -178,7 +178,7 @@ async function handleDatabaseTaskCreation(message: string): Promise<ActionPayloa
       subject_id: subjectId,
       title: cleanTitle,
       date: dueDateStr,
-      status: 'scheduled',
+      status: 'pending',  // القيم المسموح بيها في lectures: pending, missed, done
       notes: 'تمت جدولتها عبر إيجيس',
     }
   } else {

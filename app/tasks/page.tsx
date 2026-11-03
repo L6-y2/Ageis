@@ -80,7 +80,7 @@ export default function TasksPage() {
     } else if (table === 'backlog') {
       newStatus = currentStatus === 'cleared' ? 'pending' : 'cleared'
     } else if (table === 'lectures') {
-      newStatus = currentStatus === 'attended' ? 'scheduled' : 'attended'
+      newStatus = currentStatus === 'done' ? 'pending' : 'done'  // القيم الصح: pending, done, missed
     }
 
     // Optimistic update
@@ -131,7 +131,7 @@ export default function TasksPage() {
       } else if (activeTab === 'lectures') {
         payload.date = formDueDate || null
         payload.notes = formNotes
-        payload.status = 'scheduled'
+        payload.status = 'pending'  // القيم المسموح بيها: pending, missed, done
       }
 
       const res = await fetch('/api/tasks', {
@@ -172,7 +172,7 @@ export default function TasksPage() {
     assignments: data.assignments.filter((a) => a.status !== 'done').length,
     exams: data.exams.filter((e) => e.status !== 'done').length,
     backlog: data.backlog.filter((b) => b.status !== 'cleared').length,
-    lectures: data.lectures.length,
+    lectures: data.lectures.filter((l) => l.status !== 'done').length,
   }
 
   return (
@@ -485,7 +485,7 @@ export default function TasksPage() {
               ) : (
                 data.lectures.map((item) => {
                   const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                  const isAttended = item.status === 'attended'
+                  const isAttended = item.status === 'done'
 
                   return (
                     <div
@@ -500,6 +500,8 @@ export default function TasksPage() {
                           className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
                             isAttended
                               ? 'bg-cyan-500 text-white'
+                              : item.status === 'missed'
+                              ? 'bg-rose-500/40 text-rose-300 border-2 border-rose-500'
                               : 'border-2 border-slate-600 hover:border-cyan-400 text-transparent'
                           }`}
                         >
@@ -527,7 +529,7 @@ export default function TasksPage() {
                       </div>
 
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                        {isAttended ? 'تم الحضور' : 'مجدولة'}
+                        {isAttended ? 'تم الحضور ✅' : item.status === 'missed' ? 'غائب ❌' : 'قادمة 📅'}
                       </span>
                     </div>
                   )
