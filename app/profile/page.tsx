@@ -214,15 +214,31 @@ export default async function ProfilePage() {
               <h3 className="font-black text-sm text-white">سجل نقاط الخبرة الأخيرة</h3>
             </div>
             <div className="space-y-2">
-              {recentXp.map((tx: any) => (
-                <div
-                  key={tx.id}
-                  className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between"
-                >
-                  <span className="text-xs text-slate-300 font-medium">{sanitizeArabicText(tx.reason)}</span>
-                  <span className="text-xs font-black text-indigo-400 font-mono">{`+${tx.amount} XP`}</span>
-                </div>
-              ))}
+              {recentXp.map((tx: any) => {
+                // بديل ذكي لو النص مكسور
+                const sourceLabels: Record<string, string> = {
+                  study_session: '📚 جلسة مذاكرة',
+                  topic_mastered: '🎯 إتقان موضوع',
+                  task_completed: '✅ إتمام مهمة',
+                  task_done: '✅ إنجاز مهمة',
+                  exam_passed: '📝 نجاح امتحان',
+                  streak_bonus: '🔥 مكافأة الاستمرارية',
+                  badge_earned: '🏅 حصل على وسام',
+                  manual: '⚡ منحة XP',
+                }
+                const cleanReason = sanitizeArabicText(tx.reason)
+                const displayText = cleanReason || sourceLabels[tx.source_type] || `⚡ ${tx.source_type || 'نقاط خبرة'}`
+
+                return (
+                  <div
+                    key={tx.id}
+                    className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between gap-2"
+                  >
+                    <span className="text-xs text-slate-300 font-medium truncate">{displayText}</span>
+                    <span className="text-xs font-black text-indigo-400 font-mono shrink-0">{`+${tx.amount} XP`}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
