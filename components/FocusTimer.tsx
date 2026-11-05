@@ -640,8 +640,8 @@ function TimerContent() {
                   <span>{mode === 'focus' ? subject.name : 'وقت الاستراحة'}</span>
                 </div>
 
-                {/* Massive Tabular Digits */}
-                <div className="flex items-baseline font-mono text-5xl sm:text-6xl font-black text-white tracking-tight drop-shadow-md">
+                {/* Massive Tabular Digits (dir="ltr" ensures minutes are on the left and seconds on the right in Arabic RTL) */}
+                <div dir="ltr" className="flex items-baseline justify-center font-mono text-5xl sm:text-6xl font-black text-white tracking-tight drop-shadow-md">
                   <span>{mm}</span>
                   <span className="animate-pulse text-emerald-400/80 mx-0.5">:</span>
                   <span>{ss}</span>
