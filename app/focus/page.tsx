@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import BottomNav from '@/components/BottomNav'
 import FocusTimer from '@/components/FocusTimer'
 import { Timer, ArrowRight, Sparkles, Shield, Flame, CheckCircle2 } from 'lucide-react'

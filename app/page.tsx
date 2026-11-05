@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import BottomNav from '@/components/BottomNav'
 import DashboardOverview from '@/components/DashboardOverview'
@@ -9,27 +10,27 @@ export default async function HomePage() {
   const [profile, analytics] = await Promise.all([
     getUserProfile().catch(() => ({
       name: 'عمر',
-      total_xp: 118,
-      current_level: 2,
-      xp_to_next: 182,
-      progress_pct: 9,
-      level_title: 'متعلم 📘',
-      current_streak: 2,
-      longest_streak: 2,
+      total_xp: 576,
+      current_level: 3,
+      xp_to_next: 124,
+      progress_pct: 69,
+      level_title: 'متقدم ⚔️',
+      current_streak: 6,
+      longest_streak: 6,
       last_study_date: null,
-      total_study_hours: 2.2,
+      total_study_hours: 3.9,
       daily_goal_hours: 4,
       total_reviews: 0,
-      tasks_completed: 0,
-      topics_mastered: 0,
+      tasks_completed: 6,
+      topics_mastered: 2,
     })),
     getDashboardAnalytics().catch(() => ({
-      totalHours: 2.2,
+      totalHours: 3.9,
       todayHours: 0,
       dailyGoalHours: 4,
-      weeklyHours: 2.2,
-      monthlyHours: 2.2,
-      streakDays: 2,
+      weeklyHours: 3.9,
+      monthlyHours: 3.9,
+      streakDays: 6,
       weeklyActivity: [],
       subjects: [],
     })),

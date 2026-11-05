@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import BottomNav from '@/components/BottomNav'
 import SubjectCard from '@/components/SubjectCard'

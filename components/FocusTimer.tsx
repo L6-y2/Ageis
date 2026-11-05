@@ -109,9 +109,20 @@ function TimerContent() {
       .then((r) => r.json())
       .then((res) => {
         if (res?.activeSession?.id) {
-          setActiveSessionId(res.activeSession.id)
-          if (res.activeSession.subject_id) {
-            setSelectedSubject(res.activeSession.subject_id)
+          const startTime = res.activeSession.start_time ? new Date(res.activeSession.start_time).getTime() : 0
+          const ageHours = (Date.now() - startTime) / (1000 * 60 * 60)
+          if (ageHours > 3) {
+            // Abandoned session from > 3 hours ago: auto-cancel to prevent corrupted minutes
+            fetch('/api/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'cancel', sessionId: res.activeSession.id }),
+            }).catch(() => {})
+          } else {
+            setActiveSessionId(res.activeSession.id)
+            if (res.activeSession.subject_id) {
+              setSelectedSubject(res.activeSession.subject_id)
+            }
           }
         }
       })
@@ -192,6 +203,9 @@ function TimerContent() {
         setSessionLoading(false)
         setActiveSessionId(null)
       }
+    } else {
+      // Break mode completed: strictly a rest period, ensure no dangling database session
+      setActiveSessionId(null)
     }
   }, [mode, soundEnabled, activeSessionId, sessionGoal, totalSeconds, remaining, estXpReward])
 
@@ -288,7 +302,7 @@ function TimerContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
-        })
+        }).catch(() => {})
       } catch (e) {
         console.error(e)
       }
@@ -312,6 +326,14 @@ function TimerContent() {
   }
 
   const setPresetMinutes = (minutes: number) => {
+    if (activeSessionId && !running) {
+      fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
+      }).catch(() => {})
+      setActiveSessionId(null)
+    }
     const secs = minutes * 60
     setTotalSeconds(secs)
     setRemaining(secs)
@@ -447,17 +469,24 @@ function TimerContent() {
       )}
 
       {/* ─── Database Sync Status Pill ───────────────────────────────────── */}
-      {mode === 'focus' && !isZenMode && (
+      {!isZenMode && (
         <div className="flex items-center gap-2">
-          {activeSessionId ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 shadow-sm animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>جلسة نشطة مسجلة في قاعدة البيانات (#{activeSessionId})</span>
-            </div>
+          {mode === 'focus' ? (
+            activeSessionId ? (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 shadow-sm animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span>جلسة نشطة مسجلة في قاعدة البيانات (#{activeSessionId})</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
+                <span>مربوط تلقائياً بـ Supabase (ساعات، ستريك، XP)</span>
+              </div>
+            )
           ) : (
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
-              <span>مربوط تلقائياً بـ Supabase (ساعات، ستريك، XP)</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[11px] font-bold text-teal-300">
+              <Coffee size={13} className="text-teal-400" />
+              <span>استراحة مؤقتة - لا يتم احتساب وقت استراحة في ساعات المذاكرة</span>
             </div>
           )}
         </div>
@@ -645,8 +674,8 @@ function TimerContent() {
         </div>
       )}
 
-      {/* ─── Early Log Button (When paused with active session) ─────────────── */}
-      {!running && activeSessionId && !finished && (
+      {/* ─── Early Log Button (When paused with active session in Focus mode) ─── */}
+      {mode === 'focus' && !running && activeSessionId && !finished && (
         <motion.button
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
