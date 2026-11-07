@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 60
 
 import BottomNav from '@/components/BottomNav'
 import { getUserProfile } from '@/lib/api'
@@ -12,7 +12,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1Ni
 async function getAllBadges() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/badges?select=*&order=id`, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-    cache: 'no-store',
+    next: { revalidate: 60, tags: ['rpg'] },
   })
   if (!res.ok) return []
   return res.json()
@@ -21,7 +21,7 @@ async function getAllBadges() {
 async function getEarnedBadgeIds(): Promise<number[]> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/user_badges?select=badge_id`, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-    cache: 'no-store',
+    next: { revalidate: 60, tags: ['rpg'] },
   })
   if (!res.ok) return []
   const data = await res.json()

@@ -22,20 +22,30 @@ import { SUBJECTS } from '@/lib/types'
 
 type ActiveTab = 'assignments' | 'exams' | 'backlog' | 'lectures'
 
+// In-memory client cache for instantaneous tab switching and navigation
+let cachedTasksData: {
+  assignments: any[]
+  exams: any[]
+  backlog: any[]
+  lectures: any[]
+} | null = null
+
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('assignments')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedTasksData)
   const [data, setData] = useState<{
     assignments: any[]
     exams: any[]
     backlog: any[]
     lectures: any[]
-  }>({
-    assignments: [],
-    exams: [],
-    backlog: [],
-    lectures: [],
-  })
+  }>(
+    cachedTasksData || {
+      assignments: [],
+      exams: [],
+      backlog: [],
+      lectures: [],
+    }
+  )
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false)
@@ -49,17 +59,19 @@ export default function TasksPage() {
   const [formExamType, setFormExamType] = useState('quiz')
   const [formNotes, setFormNotes] = useState('')
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (showLoading = !cachedTasksData) => {
     try {
-      setLoading(true)
-      const res = await fetch(`/api/tasks?t=${Date.now()}`, { cache: 'no-store' })
+      if (showLoading) setLoading(true)
+      const res = await fetch(`/api/tasks`, { cache: 'no-store' })
       const json = await res.json()
-      setData({
+      const freshData = {
         assignments: json.assignments || [],
         exams: json.exams || [],
         backlog: json.backlog || [],
         lectures: json.lectures || [],
-      })
+      }
+      cachedTasksData = freshData
+      setData(freshData)
     } catch (e) {
       console.error('Fetch tasks error:', e)
     } finally {
@@ -84,12 +96,16 @@ export default function TasksPage() {
     }
 
     // Optimistic update
-    setData((prev) => ({
-      ...prev,
-      [table]: (prev as any)[table].map((item: any) =>
-        item.id === id ? { ...item, status: newStatus } : item
-      ),
-    }))
+    setData((prev) => {
+      const updated = {
+        ...prev,
+        [table]: (prev as any)[table].map((item: any) =>
+          item.id === id ? { ...item, status: newStatus } : item
+        ),
+      }
+      cachedTasksData = updated
+      return updated
+    })
 
     try {
       await fetch('/api/tasks', {
@@ -145,10 +161,14 @@ export default function TasksPage() {
       if (res.ok && resData.success) {
         // Optimistic update — add immediately to UI
         const newItem = resData.data?.[0] || { ...payload, id: Date.now(), created_at: new Date().toISOString() }
-        setData((prev) => ({
-          ...prev,
-          [activeTab]: [newItem, ...(prev as any)[activeTab]],
-        }))
+        setData((prev) => {
+          const updated = {
+            ...prev,
+            [activeTab]: [newItem, ...(prev as any)[activeTab]],
+          }
+          cachedTasksData = updated
+          return updated
+        })
         setShowAddModal(false)
         setFormTitle('')
         setFormNotes('')
@@ -260,9 +280,22 @@ export default function TasksPage() {
 
       {/* Tab Content List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
-          <Loader2 size={24} className="animate-spin text-emerald-400" />
-          <span className="text-xs">جاري تحميل البيانات...</span>
+        <div className="space-y-3 animate-pulse">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-20 rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-6 h-6 rounded-lg bg-white/10 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-40 bg-white/10 rounded" />
+                  <div className="h-3 w-24 bg-white/5 rounded" />
+                </div>
+              </div>
+              <div className="h-7 w-16 rounded-xl bg-white/5 shrink-0" />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="space-y-3">

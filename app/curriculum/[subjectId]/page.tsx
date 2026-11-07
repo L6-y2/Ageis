@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 30
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ async function getMasteryReport(subjectId: number) {
         Authorization: `Bearer ${SERVICE_KEY}`,
       },
       body: JSON.stringify({ p_subject_id: subjectId }),
-      cache: 'no-store',
+      next: { revalidate: 30, tags: ['curriculum'] },
     })
     if (!res.ok) return null
     return res.json()

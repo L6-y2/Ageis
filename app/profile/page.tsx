@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 30
 
 import BottomNav from '@/components/BottomNav'
 import { getUserProfile, sanitizeArabicText } from '@/lib/api'
@@ -32,7 +32,7 @@ async function getRecentXpTransactions() {
         apikey: SERVICE_KEY,
         Authorization: `Bearer ${SERVICE_KEY}`,
       },
-      cache: 'no-store',
+      next: { revalidate: 15, tags: ['profile'] },
     })
     if (!res.ok) return []
     return res.json()

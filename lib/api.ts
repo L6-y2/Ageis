@@ -103,19 +103,19 @@ export function sanitizeArabicText(text?: string): string {
 // ─── User Profile ─────────────────────────────────────────────────────────
 export async function getUserProfile(): Promise<UserProfile> {
   try {
-    // 1. Fetch user_profile, study_sessions, and xp_transactions in parallel with no-store
+    // 1. Fetch user_profile, study_sessions, and xp_transactions in parallel with short ISR cache
     const [profileRes, sessionsRes, xpRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/user_profile?id=eq.1&select=*`, {
         headers,
-        cache: 'no-store',
+        next: { revalidate: 10, tags: ['profile'] },
       }).then((r) => (r.ok ? r.json() : [])),
       fetch(`${SUPABASE_URL}/rest/v1/study_sessions?status=eq.completed&select=duration_minutes`, {
         headers,
-        cache: 'no-store',
+        next: { revalidate: 10, tags: ['profile'] },
       }).then((r) => (r.ok ? r.json() : [])),
       fetch(`${SUPABASE_URL}/rest/v1/xp_transactions?select=amount`, {
         headers,
-        cache: 'no-store',
+        next: { revalidate: 10, tags: ['profile'] },
       }).then((r) => (r.ok ? r.json() : [])),
     ])
 
@@ -384,31 +384,33 @@ export async function recordStudySession(subjectId: number, durationMinutes: num
 }
 
 // ─── Comprehensive Dashboard Analytics ──────────────────────────────────────
-export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
+export async function getDashboardAnalytics(providedProfile?: UserProfile): Promise<DashboardAnalytics> {
   const [profile, sessionsRes, topicsRes] = await Promise.all([
-    getUserProfile().catch(() => ({
-      name: 'عمر',
-      total_xp: 118,
-      current_level: 2,
-      xp_to_next: 182,
-      progress_pct: 9,
-      level_title: 'متعلم 📘',
-      current_streak: 2,
-      longest_streak: 2,
-      last_study_date: null,
-      total_study_hours: 2.2,
-      daily_goal_hours: 4,
-      total_reviews: 0,
-      tasks_completed: 0,
-      topics_mastered: 0,
-    })),
+    providedProfile
+      ? Promise.resolve(providedProfile)
+      : getUserProfile().catch(() => ({
+          name: 'عمر',
+          total_xp: 118,
+          current_level: 2,
+          xp_to_next: 182,
+          progress_pct: 9,
+          level_title: 'متعلم 📘',
+          current_streak: 2,
+          longest_streak: 2,
+          last_study_date: null,
+          total_study_hours: 2.2,
+          daily_goal_hours: 4,
+          total_reviews: 0,
+          tasks_completed: 0,
+          topics_mastered: 0,
+        })),
     fetch(`${SUPABASE_URL}/rest/v1/study_sessions?select=*&status=eq.completed`, {
       headers,
-      cache: 'no-store',
+      next: { revalidate: 15 },
     }).then((r) => (r.ok ? r.json() : [])),
     fetch(`${SUPABASE_URL}/rest/v1/curriculum_topics?select=subject_id,mastery_level`, {
       headers,
-      cache: 'no-store',
+      next: { revalidate: 30 },
     }).then((r) => (r.ok ? r.json() : [])),
   ])
 
