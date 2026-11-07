@@ -71,6 +71,58 @@ function playSound(type: 'complete' | 'break' | 'tick') {
   }
 }
 
+// ─── Persistent Storage Helpers for Uninterrupted Timer ──────────────────────────
+export const POMODORO_STORAGE_KEY = 'aegis_pomodoro_state'
+
+interface StoredPomodoroState {
+  running: boolean
+  mode: TimerMode
+  selectedSubject: number
+  totalSeconds: number
+  remaining: number
+  targetEndTime: number | null
+  activeSessionId: number | null
+  sessionGoal: string
+  completedCycles: number
+}
+
+function getStoredPomodoro(): StoredPomodoroState | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(POMODORO_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+function saveStoredPomodoro(patch: Partial<StoredPomodoroState>) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getStoredPomodoro() || {
+      running: false,
+      mode: 'focus' as TimerMode,
+      selectedSubject: SUBJECTS[0].id,
+      totalSeconds: 25 * 60,
+      remaining: 25 * 60,
+      targetEndTime: null,
+      activeSessionId: null,
+      sessionGoal: '',
+      completedCycles: 0,
+    }
+    const updated = { ...existing, ...patch }
+    localStorage.setItem(POMODORO_STORAGE_KEY, JSON.stringify(updated))
+  } catch {}
+}
+
+function clearStoredPomodoro() {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(POMODORO_STORAGE_KEY)
+  } catch {}
+}
+
 function TimerContent() {
   const searchParams = useSearchParams()
   const subjectParam = searchParams.get('subject')
@@ -92,6 +144,8 @@ function TimerContent() {
 
   // Database Connection States
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null)
+  const activeSessionIdRef = useRef<number | null>(null)
+  const targetEndTimeRef = useRef<number | null>(null)
   const [sessionLoading, setSessionLoading] = useState(false)
   const [sessionStats, setSessionStats] = useState<{
     streak?: number
@@ -103,8 +157,52 @@ function TimerContent() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const subject = SUBJECTS.find((s) => s.id === selectedSubject) || SUBJECTS[0]
 
-  // Check for any dangling active session on mount
+  // Synchronize ref whenever activeSessionId changes
   useEffect(() => {
+    activeSessionIdRef.current = activeSessionId
+  }, [activeSessionId])
+
+  // Restore timer state on mount (from localStorage or active DB session)
+  useEffect(() => {
+    const saved = getStoredPomodoro()
+    if (saved) {
+      if (saved.mode) setMode(saved.mode)
+      if (saved.selectedSubject && SUBJECTS.some((s) => s.id === saved.selectedSubject)) {
+        setSelectedSubject(saved.selectedSubject)
+      }
+      if (saved.totalSeconds) setTotalSeconds(saved.totalSeconds)
+      if (saved.sessionGoal) setSessionGoal(saved.sessionGoal)
+      if (saved.completedCycles) setCompletedCycles(saved.completedCycles)
+      if (saved.activeSessionId) {
+        setActiveSessionId(saved.activeSessionId)
+        activeSessionIdRef.current = saved.activeSessionId
+      }
+
+      if (saved.running && saved.targetEndTime) {
+        const now = Date.now()
+        const diffSeconds = Math.max(0, Math.round((saved.targetEndTime - now) / 1000))
+        targetEndTimeRef.current = saved.targetEndTime
+
+        if (diffSeconds > 0) {
+          // Timer was and is still running! Continue counting down seamlessly
+          setRemaining(diffSeconds)
+          setRunning(true)
+        } else {
+          // Finished while the user was away on another page
+          setRemaining(0)
+          setRunning(false)
+          targetEndTimeRef.current = null
+          setTimeout(() => {
+            completeSessionRef.current(saved.activeSessionId)
+          }, 300)
+        }
+      } else if (typeof saved.remaining === 'number' && saved.remaining > 0) {
+        setRemaining(saved.remaining)
+        setRunning(false)
+      }
+    }
+
+    // Check database for active session
     fetch('/api/session')
       .then((r) => r.json())
       .then((res) => {
@@ -118,10 +216,37 @@ function TimerContent() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'cancel', sessionId: res.activeSession.id }),
             }).catch(() => {})
+            clearStoredPomodoro()
           } else {
             setActiveSessionId(res.activeSession.id)
+            activeSessionIdRef.current = res.activeSession.id
             if (res.activeSession.subject_id) {
               setSelectedSubject(res.activeSession.subject_id)
+            }
+
+            // If localStorage didn't already have an active targetEndTime, resume from DB start_time
+            if (!targetEndTimeRef.current) {
+              const elapsedSec = Math.floor((Date.now() - startTime) / 1000)
+              const defaultTotal = 25 * 60
+              if (elapsedSec < defaultTotal) {
+                const rem = defaultTotal - elapsedSec
+                const target = Date.now() + rem * 1000
+                targetEndTimeRef.current = target
+                setTotalSeconds(defaultTotal)
+                setRemaining(rem)
+                setRunning(true)
+                saveStoredPomodoro({
+                  running: true,
+                  mode: 'focus',
+                  selectedSubject: res.activeSession.subject_id || SUBJECTS[0].id,
+                  totalSeconds: defaultTotal,
+                  remaining: rem,
+                  targetEndTime: target,
+                  activeSessionId: res.activeSession.id,
+                  sessionGoal: res.activeSession.notes || '',
+                  completedCycles: 0,
+                })
+              }
             }
           }
         }
@@ -160,12 +285,17 @@ function TimerContent() {
   }
 
   // ─── Complete and Log Session to Database ────────────────────────────────
-  const completeSession = useCallback(async () => {
+  const completeSession = useCallback(async (forcedSessionId?: any) => {
     setRunning(false)
+    targetEndTimeRef.current = null
     setFinished(true)
+    clearStoredPomodoro()
+
     if (soundEnabled) {
       playSound(mode === 'focus' ? 'complete' : 'break')
     }
+
+    const sessId = typeof forcedSessionId === 'number' ? forcedSessionId : (activeSessionIdRef.current || activeSessionId)
 
     if (mode === 'focus') {
       triggerConfetti()
@@ -176,7 +306,7 @@ function TimerContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'end',
-            sessionId: activeSessionId,
+            sessionId: sessId,
             notes: sessionGoal || 'جلسة بومودورو مكتملة',
           }),
         })
@@ -192,7 +322,11 @@ function TimerContent() {
             message: data.message,
             rewards: data.unlocked_rewards || [],
           })
-          setCompletedCycles((c) => c + 1)
+          setCompletedCycles((c) => {
+            const next = c + 1
+            saveStoredPomodoro({ completedCycles: next })
+            return next
+          })
         } else {
           setEarnedXp(estXpReward)
         }
@@ -201,10 +335,11 @@ function TimerContent() {
         setEarnedXp(estXpReward)
       } finally {
         setSessionLoading(false)
+        activeSessionIdRef.current = null
         setActiveSessionId(null)
       }
     } else {
-      // Break mode completed: strictly a rest period, ensure no dangling database session
+      activeSessionIdRef.current = null
       setActiveSessionId(null)
     }
   }, [mode, soundEnabled, activeSessionId, sessionGoal, totalSeconds, remaining, estXpReward])
@@ -214,17 +349,20 @@ function TimerContent() {
     completeSessionRef.current = completeSession
   }, [completeSession])
 
-  // ─── Ticking Logic ───────────────────────────────────────────────────────
+  // ─── Ticking Logic (Wall-Clock Precision with Persistence) ───────────────
   useEffect(() => {
-    if (running) {
+    if (running && targetEndTimeRef.current) {
       intervalRef.current = setInterval(() => {
-        setRemaining((r) => {
-          if (r <= 1) {
-            completeSessionRef.current()
-            return 0
-          }
-          return r - 1
-        })
+        const now = Date.now()
+        const diffSeconds = Math.max(0, Math.round((targetEndTimeRef.current! - now) / 1000))
+        setRemaining(diffSeconds)
+        saveStoredPomodoro({ remaining: diffSeconds })
+
+        if (diffSeconds <= 0) {
+          if (intervalRef.current) clearInterval(intervalRef.current)
+          targetEndTimeRef.current = null
+          completeSessionRef.current()
+        }
       }, 1000)
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -243,11 +381,18 @@ function TimerContent() {
 
     if (running) {
       setRunning(false)
+      targetEndTimeRef.current = null
+      saveStoredPomodoro({
+        running: false,
+        remaining,
+        targetEndTime: null,
+      })
       return
     }
 
     // Starting focus timer: open session in database if not opened yet
-    if (mode === 'focus' && !activeSessionId) {
+    let currentSessionId = activeSessionIdRef.current || activeSessionId
+    if (mode === 'focus' && !currentSessionId) {
       setSessionLoading(true)
       try {
         const res = await fetch('/api/session', {
@@ -262,7 +407,9 @@ function TimerContent() {
         })
         const json = await res.json()
         if (json?.data?.session_id) {
-          setActiveSessionId(json.data.session_id)
+          currentSessionId = json.data.session_id
+          activeSessionIdRef.current = currentSessionId
+          setActiveSessionId(currentSessionId)
         }
       } catch (err) {
         console.error('Failed to start session in database:', err)
@@ -271,23 +418,40 @@ function TimerContent() {
       }
     }
 
+    const newTarget = Date.now() + remaining * 1000
+    targetEndTimeRef.current = newTarget
     setRunning(true)
+    saveStoredPomodoro({
+      running: true,
+      mode,
+      selectedSubject,
+      totalSeconds,
+      remaining,
+      targetEndTime: newTarget,
+      activeSessionId: currentSessionId,
+      sessionGoal,
+      completedCycles,
+    })
   }
 
   // ─── Reset Timer & Cancel Active Session in Database ─────────────────────
   const handleReset = useCallback(async () => {
-    if (activeSessionId) {
+    const sessId = activeSessionIdRef.current || activeSessionId
+    if (sessId) {
       try {
         fetch('/api/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
+          body: JSON.stringify({ action: 'cancel', sessionId: sessId }),
         })
       } catch (e) {
         console.error(e)
       }
+      activeSessionIdRef.current = null
       setActiveSessionId(null)
     }
+    targetEndTimeRef.current = null
+    clearStoredPomodoro()
     setRunning(false)
     setFinished(false)
     setEarnedXp(null)
@@ -296,55 +460,104 @@ function TimerContent() {
   }, [activeSessionId, totalSeconds])
 
   const switchMode = (newMode: TimerMode) => {
-    if (activeSessionId) {
+    const sessId = activeSessionIdRef.current || activeSessionId
+    if (sessId) {
       try {
         fetch('/api/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
+          body: JSON.stringify({ action: 'cancel', sessionId: sessId }),
         }).catch(() => {})
       } catch (e) {
         console.error(e)
       }
+      activeSessionIdRef.current = null
       setActiveSessionId(null)
     }
+    targetEndTimeRef.current = null
+    clearStoredPomodoro()
     setMode(newMode)
     setRunning(false)
     setFinished(false)
     setEarnedXp(null)
     setSessionStats(null)
+    let newTotal = 25 * 60
     if (newMode === 'focus') {
-      setTotalSeconds(25 * 60)
-      setRemaining(25 * 60)
+      newTotal = 25 * 60
     } else if (newMode === 'shortBreak') {
-      setTotalSeconds(5 * 60)
-      setRemaining(5 * 60)
+      newTotal = 5 * 60
     } else if (newMode === 'longBreak') {
-      setTotalSeconds(15 * 60)
-      setRemaining(15 * 60)
+      newTotal = 15 * 60
     }
+    setTotalSeconds(newTotal)
+    setRemaining(newTotal)
+    saveStoredPomodoro({
+      running: false,
+      mode: newMode,
+      selectedSubject,
+      totalSeconds: newTotal,
+      remaining: newTotal,
+      targetEndTime: null,
+      activeSessionId: null,
+      sessionGoal,
+      completedCycles,
+    })
   }
 
   const setPresetMinutes = (minutes: number) => {
-    if (activeSessionId && !running) {
+    const sessId = activeSessionIdRef.current || activeSessionId
+    if (sessId && !running) {
       fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel', sessionId: activeSessionId }),
+        body: JSON.stringify({ action: 'cancel', sessionId: sessId }),
       }).catch(() => {})
+      activeSessionIdRef.current = null
       setActiveSessionId(null)
     }
     const secs = minutes * 60
+    targetEndTimeRef.current = null
     setTotalSeconds(secs)
     setRemaining(secs)
     setRunning(false)
     setFinished(false)
     setEarnedXp(null)
+    saveStoredPomodoro({
+      running: false,
+      mode,
+      selectedSubject,
+      totalSeconds: secs,
+      remaining: secs,
+      targetEndTime: null,
+      activeSessionId: null,
+      sessionGoal,
+      completedCycles,
+    })
   }
 
   const addFiveMinutes = () => {
-    setTotalSeconds((prev) => prev + 300)
-    setRemaining((prev) => prev + 300)
+    setTotalSeconds((prev) => {
+      const nextTotal = prev + 300
+      setRemaining((rem) => {
+        const nextRem = rem + 300
+        if (running && targetEndTimeRef.current) {
+          targetEndTimeRef.current += 300 * 1000
+        }
+        saveStoredPomodoro({
+          running,
+          mode,
+          selectedSubject,
+          totalSeconds: nextTotal,
+          remaining: nextRem,
+          targetEndTime: targetEndTimeRef.current,
+          activeSessionId: activeSessionIdRef.current || activeSessionId,
+          sessionGoal,
+          completedCycles,
+        })
+        return nextRem
+      })
+      return nextTotal
+    })
   }
 
   // Generate 60 dial tick marks
@@ -679,7 +892,7 @@ function TimerContent() {
         <motion.button
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          onClick={completeSession}
+          onClick={() => completeSession()}
           disabled={sessionLoading}
           className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
         >
