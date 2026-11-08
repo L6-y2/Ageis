@@ -123,6 +123,18 @@ export interface DashboardAnalytics {
   subjects: SubjectDetailedProgress[]
 }
 
+export interface SpacedReviewTopic {
+  id: number
+  subject_id: number
+  chapter?: string
+  topic: string
+  mastery_level: number
+  next_review_date: string | null
+  interval_days?: number
+  repetitions?: number
+  easiness_factor?: number
+}
+
 // Subjects configuration
 export const SUBJECTS: Subject[] = [
   { id: 6, name: 'اللغة العربية', icon: '📖', color: 'from-emerald-500 to-teal-600' },

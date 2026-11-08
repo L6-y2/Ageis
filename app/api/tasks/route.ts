@@ -12,11 +12,12 @@ const headers = {
   Authorization: `Bearer ${SERVICE_KEY}`,
 }
 
-// GET: Fetch all tasks, exams, backlog, and lectures
+// GET: Fetch tasks, assignments, exams, backlog, lectures, and spaced repetition reviews
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type') || 'all'
+    const subjectId = searchParams.get('subject_id') ? parseInt(searchParams.get('subject_id')!) : null
 
     const fetchTable = async (table: string, order = 'created_at.desc') => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=${order}`, {
@@ -24,7 +25,27 @@ export async function GET(req: NextRequest) {
         cache: 'no-store',
       })
       if (!res.ok) return []
-      return res.json()
+      const items = await res.json()
+      if (subjectId) {
+        return items.filter((item: any) => item.subject_id === subjectId)
+      }
+      return items
+    }
+
+    const fetchReviews = async () => {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/curriculum_topics?select=id,subject_id,chapter,topic,mastery_level,next_review_date,interval_days,repetitions,easiness_factor&order=next_review_date.asc`,
+        {
+          headers,
+          cache: 'no-store',
+        }
+      )
+      if (!res.ok) return []
+      const items = await res.json()
+      if (subjectId) {
+        return items.filter((item: any) => item.subject_id === subjectId)
+      }
+      return items
     }
 
     if (type === 'assignments') {
@@ -43,13 +64,18 @@ export async function GET(req: NextRequest) {
       const data = await fetchTable('lectures')
       return NextResponse.json(data)
     }
+    if (type === 'reviews') {
+      const data = await fetchReviews()
+      return NextResponse.json(data)
+    }
 
-    // Fetch all
-    const [assignments, exams, backlog, lectures] = await Promise.all([
+    // Fetch all 5 categories
+    const [assignments, exams, backlog, lectures, reviews] = await Promise.all([
       fetchTable('assignments'),
       fetchTable('exams'),
       fetchTable('backlog'),
       fetchTable('lectures'),
+      fetchReviews(),
     ])
 
     return NextResponse.json({
@@ -57,6 +83,7 @@ export async function GET(req: NextRequest) {
       exams,
       backlog,
       lectures,
+      reviews,
     })
   } catch (err: any) {
     console.error('Fetch tasks error:', err)
@@ -96,12 +123,54 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH: Update status of an item
+// PATCH: Update status of an item OR rate a Spaced Repetition (SM-2) review
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
-    const { table, id, status } = body
+    const { table, id, status, grade } = body
 
+    // 1. Spaced Repetition (SM-2) Rating
+    if (table === 'reviews' || typeof grade === 'number') {
+      const topicId = id || body.topicId
+      const rateGrade = typeof grade === 'number' ? grade : 5
+
+      const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rpc_sm2_update`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ p_topic_id: topicId, p_grade: rateGrade }),
+      })
+
+      if (!rpcRes.ok) {
+        const err = await rpcRes.text()
+        return NextResponse.json({ error: err }, { status: 400 })
+      }
+
+      const sm2Data = await rpcRes.json()
+
+      // Award XP for spaced repetition review:
+      // Grade 5: 15 XP, Grade 4: 10 XP, Grade 3: 5 XP, Grade 1: 2 XP
+      const xpAmount = rateGrade >= 5 ? 15 : rateGrade >= 4 ? 10 : rateGrade >= 3 ? 5 : 2
+      const topicName = sm2Data.topic || `درس #${topicId}`
+
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/xp_transactions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            amount: xpAmount,
+            reason: `مراجعة تكرار متباعد: ${topicName}`,
+            source_type: 'topic_mastered',
+            source_id: topicId,
+          }),
+        })
+      } catch (e) {
+        console.error('XP grant error in SM-2:', e)
+      }
+
+      return NextResponse.json({ success: true, data: sm2Data, earnedXp: xpAmount })
+    }
+
+    // 2. Regular Task Toggle (assignments, exams, backlog, lectures)
     if (!['assignments', 'exams', 'backlog', 'lectures'].includes(table) || !id || !status) {
       return NextResponse.json({ error: 'Missing table, id, or status' }, { status: 400 })
     }

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 import CurriculumTree from '@/components/CurriculumTree'
 import { SUBJECTS } from '@/lib/types'
-import { ArrowRight, BookOpen, Sparkles, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, BookOpen, Sparkles, CheckCircle2, CheckSquare, Timer } from 'lucide-react'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://crbfhqpklruvbgcanuoo.supabase.co'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYmZocXBrbHJ1dmJnY2FudW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0Mjc4NTcsImV4cCI6MjEwOTAwMzg1N30.W8YLY_kiGqHvLs5LFDxHP0goL0vRJ18HtzdPLa0mXjY'
@@ -89,6 +89,24 @@ export default async function CurriculumSubjectPage({
             <span className="text-[10px] text-slate-500 font-bold">إتقان</span>
           </div>
         </div>
+      </div>
+
+      {/* Quick Subject Actions Bar */}
+      <div className="flex items-center gap-2 mb-5">
+        <Link
+          href="/tasks"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl glass-interactive border border-slate-800 text-xs font-bold text-slate-200 hover:text-white transition-all shadow-sm"
+        >
+          <CheckSquare size={15} className="text-emerald-400" />
+          <span>مهام وتكليفات المادة</span>
+        </Link>
+        <Link
+          href={`/focus?subject=${id}`}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl glass-interactive border border-slate-800 text-xs font-bold text-slate-200 hover:text-white transition-all shadow-sm"
+        >
+          <Timer size={15} className="text-amber-400" />
+          <span>مذاكرة وبومودورو</span>
+        </Link>
       </div>
 
       {/* Topics Syllabus Timeline Tree */}
