@@ -222,6 +222,15 @@ function TimerContent() {
     return () => clearInterval(t)
   }, [])
 
+  // Sync Fullscreen state with native browser events
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFsChange)
+    return () => document.removeEventListener('fullscreenchange', handleFsChange)
+  }, [])
+
   // Sync Lo-Fi audio volume
   useEffect(() => {
     if (audioRef.current) {
@@ -727,34 +736,69 @@ function TimerContent() {
       {/* 1. COZY LOFI STUDY ROOM (MATCHING USER REFERENCE SCREENSHOT)       */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {studioMode === 'cozy' ? (
-        <div className="relative w-full rounded-3xl bg-[#572c47] border border-pink-900/30 shadow-2xl overflow-hidden p-3 sm:p-6 text-white">
+        <div
+          className={`relative w-full bg-[#572c47] text-white flex flex-col justify-between select-none transition-all duration-300 ${
+            isFullscreen
+              ? 'fixed inset-0 z-50 w-screen h-screen p-4 sm:p-8 rounded-none border-none overflow-hidden'
+              : 'rounded-3xl border border-pink-900/30 shadow-2xl p-3 sm:p-6 min-h-[560px] sm:min-h-[660px] md:min-h-[740px] overflow-hidden'
+          }`}
+        >
           {/* ─── Top Left: Activity & Timer Status (Matches Reference Screenshot!) ─── */}
-          <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-30 flex flex-col gap-1.5 text-left" dir="ltr">
-            <div className="flex items-center gap-2">
+          <div
+            className={`absolute z-30 flex flex-col text-left ${
+              isFullscreen ? 'top-6 left-6 sm:top-8 sm:left-8 gap-2.5' : 'top-4 left-4 sm:top-6 sm:left-6 gap-1.5'
+            }`}
+            dir="ltr"
+          >
+            <div className="flex items-center gap-2.5">
               <button
                 onClick={toggleRunning}
-                className="w-7 h-7 rounded-lg bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white transition-all active:scale-95 shadow-sm"
+                className={`rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white transition-all active:scale-95 shadow-md ${
+                  isFullscreen ? 'w-10 h-10 sm:w-12 sm:h-12' : 'w-7 h-7 sm:w-8 sm:h-8'
+                }`}
                 title={running ? 'إيقاف مؤقت' : 'بدء التركيز'}
               >
-                {running ? <Pause size={13} /> : <Play size={13} className="translate-x-0.5" />}
+                {running ? (
+                  <Pause size={isFullscreen ? 18 : 13} />
+                ) : (
+                  <Play size={isFullscreen ? 18 : 13} className="translate-x-0.5" />
+                )}
               </button>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-white/90">
-                <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
+              <div
+                className={`flex items-center gap-1.5 font-bold text-white/90 ${
+                  isFullscreen ? 'text-sm sm:text-base' : 'text-xs'
+                }`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full bg-pink-400 animate-pulse" />
                 <span>{mode === 'focus' ? 'Activity' : 'Break'}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-white/90 pl-1">
-              <span className="text-pink-300 text-sm">🔁</span>
-              <span className="text-sm font-black text-white tracking-wide">{`${mm}:${ss}`}</span>
-              <span className="text-[11px] text-white/60">
+            <div
+              className={`flex items-center gap-2 font-mono font-bold text-white/90 pl-1 ${
+                isFullscreen ? 'text-base sm:text-lg' : 'text-xs'
+              }`}
+            >
+              <span className="text-pink-300">🔁</span>
+              <span
+                className={`font-black text-white tracking-wide ${
+                  isFullscreen ? 'text-2xl sm:text-4xl' : 'text-sm sm:text-base'
+                }`}
+              >
+                {`${mm}:${ss}`}
+              </span>
+              <span className={`text-white/60 ${isFullscreen ? 'text-xs sm:text-sm' : 'text-[11px]'}`}>
                 {running ? `${Math.ceil(remaining / 60)} min to go` : 'paused'}
               </span>
             </div>
 
             {/* Current Active Subject Tag */}
             <div className="pt-0.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/15 text-[11px] font-bold text-white/80">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-lg bg-black/40 border border-white/15 font-bold text-white/85 shadow-sm ${
+                  isFullscreen ? 'px-3.5 py-1.5 text-xs sm:text-sm' : 'px-2.5 py-0.5 text-[11px]'
+                }`}
+              >
                 <span>{subject.icon}</span>
                 <span>{subject.name}</span>
               </span>
@@ -762,38 +806,64 @@ function TimerContent() {
           </div>
 
           {/* ─── Top Right: Clock, Quick Buttons & Sound Mixer Panel (Matches Screenshot!) ─── */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex flex-col items-end gap-2.5">
+          <div
+            className={`absolute z-30 flex flex-col items-end ${
+              isFullscreen ? 'top-6 right-6 sm:top-8 sm:right-8 gap-3.5' : 'top-4 right-4 sm:top-6 sm:right-6 gap-2.5'
+            }`}
+          >
             {/* Digital Clock (HH:MM | AM/PM) Capsule */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-white/20 font-mono text-xs sm:text-sm font-bold text-white shadow-lg backdrop-blur-md select-none">
+            <div
+              className={`flex items-center gap-2 bg-black/40 border border-white/20 font-mono font-bold text-white shadow-lg backdrop-blur-md select-none ${
+                isFullscreen ? 'px-4 py-2 rounded-2xl text-sm sm:text-lg' : 'px-3 py-1 rounded-xl text-xs sm:text-sm'
+              }`}
+            >
               <span>{clockTime.split(' ')[0] || '15:11'}</span>
               <span className="text-white/30 text-xs">|</span>
-              <span className="text-[10px] sm:text-xs text-white/70">{clockTime.split(' ')[1] || 'PM'}</span>
+              <span className="text-white/70">{clockTime.split(' ')[1] || 'PM'}</span>
             </div>
 
             {/* Quick Actions (Goal/Tasks, Fullscreen) */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowGoalModal(true)}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95"
+                className={`bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95 ${
+                  isFullscreen
+                    ? 'w-10 h-10 sm:w-12 sm:h-12 rounded-2xl'
+                    : 'w-8 h-8 sm:w-9 sm:h-9 rounded-xl'
+                }`}
                 title="تحديد هدف الجلسة"
               >
-                <ListTodo size={15} />
+                <ListTodo size={isFullscreen ? 18 : 15} />
               </button>
               <button
                 onClick={toggleFullscreen}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95"
+                className={`bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95 ${
+                  isFullscreen
+                    ? 'w-10 h-10 sm:w-12 sm:h-12 rounded-2xl'
+                    : 'w-8 h-8 sm:w-9 sm:h-9 rounded-xl'
+                }`}
                 title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
               >
-                {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                {isFullscreen ? (
+                  <Minimize2 size={isFullscreen ? 18 : 15} />
+                ) : (
+                  <Maximize2 size={isFullscreen ? 18 : 15} />
+                )}
               </button>
             </div>
 
             {/* ─── Ambient Sound Mixer Vertical Panel (From Screenshot!) ──── */}
-            <div className="p-2.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col gap-2.5 w-28 sm:w-32">
+            <div
+              className={`bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col ${
+                isFullscreen
+                  ? 'p-3.5 sm:p-4 rounded-3xl gap-3 sm:gap-3.5 w-36 sm:w-44'
+                  : 'p-2.5 rounded-2xl gap-2.5 w-28 sm:w-32'
+              }`}
+            >
               {/* 🌧️ Row 1: Rain */}
               <div className="flex items-center gap-2 px-1">
                 <CloudRain
-                  size={16}
+                  size={isFullscreen ? 18 : 16}
                   className={`shrink-0 ${ambient.rain > 0 ? 'text-cyan-400' : 'text-white/60'}`}
                 />
                 <input
@@ -803,7 +873,9 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.rain}
                   onChange={(e) => handleAmbientChange('rain', parseFloat(e.target.value))}
-                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
+                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
+                  }`}
                   title="صوت المطر"
                 />
               </div>
@@ -811,7 +883,7 @@ function TimerContent() {
               {/* ❄️ Row 2: Snow / Cold Blizzard Noise */}
               <div className="flex items-center gap-2 px-1">
                 <Snowflake
-                  size={16}
+                  size={isFullscreen ? 18 : 16}
                   className={`shrink-0 ${ambient.brown > 0 ? 'text-blue-300' : 'text-white/60'}`}
                 />
                 <input
@@ -821,7 +893,9 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.brown}
                   onChange={(e) => handleAmbientChange('brown', parseFloat(e.target.value))}
-                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
+                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
+                  }`}
                   title="عاصفة ثلجية وهدوء تام"
                 />
               </div>
@@ -829,7 +903,7 @@ function TimerContent() {
               {/* 💨 Row 3: Wind */}
               <div className="flex items-center gap-2 px-1">
                 <Wind
-                  size={16}
+                  size={isFullscreen ? 18 : 16}
                   className={`shrink-0 ${ambient.wind > 0 ? 'text-indigo-300' : 'text-white/60'}`}
                 />
                 <input
@@ -839,7 +913,9 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.wind}
                   onChange={(e) => handleAmbientChange('wind', parseFloat(e.target.value))}
-                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
+                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
+                  }`}
                   title="نسيم الرياح"
                 />
               </div>
@@ -847,7 +923,7 @@ function TimerContent() {
               {/* 🔥 Row 4: Fire */}
               <div className="flex items-center gap-2 px-1">
                 <Flame
-                  size={16}
+                  size={isFullscreen ? 18 : 16}
                   className={`shrink-0 ${ambient.fire > 0 ? 'text-amber-400' : 'text-white/60'}`}
                 />
                 <input
@@ -857,20 +933,23 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.fire}
                   onChange={(e) => handleAmbientChange('fire', parseFloat(e.target.value))}
-                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
+                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
+                  }`}
                   title="حطب المدفأة"
                 />
               </div>
             </div>
           </div>
 
-          {/* ─── Centerpiece: The Real 3D Isometric Cozy Study Cabin Artwork ─── */}
-          <div className="py-1 my-auto relative z-10 w-full flex items-center justify-center">
+          {/* ─── Centerpiece: The Ultra HD 2K Isometric Cozy Study Cabin Artwork ─── */}
+          <div className="flex-1 w-full flex items-center justify-center my-auto relative z-10 py-1">
             <CozyStudyRoom
               isFocusing={running && mode === 'focus'}
               isBreak={mode !== 'focus'}
               rainActive={ambient.rain > 0}
               fireActive={ambient.fire > 0}
+              isFullscreen={isFullscreen}
               onToggleRain={() => handleAmbientChange('rain', ambient.rain > 0 ? 0 : 0.4)}
               onToggleFire={() => handleAmbientChange('fire', ambient.fire > 0 ? 0 : 0.35)}
               onPetCat={handlePetCat}
@@ -883,7 +962,7 @@ function TimerContent() {
                   initial={{ opacity: 0, y: 10, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-pink-950/90 border border-pink-500/50 text-xs font-bold text-pink-200 shadow-2xl backdrop-blur-md z-30"
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-pink-950/90 border border-pink-500/50 text-xs sm:text-sm font-bold text-pink-200 shadow-2xl backdrop-blur-md z-30"
                 >
                   🐱 مياو! القطة تشعر بالدفء وممتنة لمذاكرتك المركزة ❤️
                 </motion.div>
@@ -892,24 +971,40 @@ function TimerContent() {
           </div>
 
           {/* ─── Bottom Center: Lo-Fi Music Player Bar (Matches Reference Screenshot!) ─── */}
-          <div className="relative z-20 flex flex-col items-center justify-center gap-3 pt-4 border-t border-white/10">
+          <div
+            className={`relative z-20 flex flex-col items-center justify-center gap-3 border-t border-white/10 ${
+              isFullscreen ? 'pt-5 pb-2' : 'pt-3'
+            }`}
+          >
             {/* Centered Lofi Player (Play/Pause, Shuffle, Volume, Track Name) */}
             <div className="flex flex-col items-center gap-1.5" dir="ltr">
-              <div className="flex items-center gap-3 bg-black/40 px-3.5 py-1.5 rounded-full border border-white/20 shadow-lg backdrop-blur-md">
+              <div
+                className={`flex items-center bg-black/40 rounded-full border border-white/20 shadow-lg backdrop-blur-md ${
+                  isFullscreen ? 'px-5 py-2.5 sm:px-6 sm:py-3 gap-4' : 'px-3.5 py-1.5 gap-3'
+                }`}
+              >
                 <button
                   onClick={toggleLofi}
-                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-transform active:scale-90"
+                  className={`rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-transform active:scale-90 ${
+                    isFullscreen ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-7 h-7'
+                  }`}
                   title={lofiPlaying ? 'إيقاف مؤقت' : 'تشغيل اللوفاي'}
                 >
-                  {lofiPlaying ? <Pause size={14} /> : <Play size={14} className="translate-x-0.5" />}
+                  {lofiPlaying ? (
+                    <Pause size={isFullscreen ? 17 : 14} />
+                  ) : (
+                    <Play size={isFullscreen ? 17 : 14} className="translate-x-0.5" />
+                  )}
                 </button>
 
                 <button
                   onClick={() => changeLofiStation(1)}
-                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-transform active:scale-90"
+                  className={`rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-transform active:scale-90 ${
+                    isFullscreen ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-7 h-7'
+                  }`}
                   title="المحطة التالية"
                 >
-                  <Shuffle size={14} />
+                  <Shuffle size={isFullscreen ? 17 : 14} />
                 </button>
 
                 {/* Volume Slider matching reference screenshot thumb style */}
@@ -920,13 +1015,19 @@ function TimerContent() {
                   step="0.05"
                   value={lofiVolume}
                   onChange={(e) => setLofiVolume(parseFloat(e.target.value))}
-                  className="w-20 accent-white h-1.5 bg-white/25 rounded-full cursor-pointer"
+                  className={`accent-white bg-white/25 rounded-full cursor-pointer ${
+                    isFullscreen ? 'w-28 sm:w-36 h-2' : 'w-20 h-1.5'
+                  }`}
                   title="مستوى الصوت"
                 />
               </div>
 
               {/* Track Title / Artist */}
-              <p className="text-[11px] font-mono font-medium text-white/70 tracking-wide select-none">
+              <p
+                className={`font-mono font-medium text-white/70 tracking-wide select-none ${
+                  isFullscreen ? 'text-xs sm:text-sm' : 'text-[11px]'
+                }`}
+              >
                 {currentStation.name}
               </p>
             </div>
@@ -934,12 +1035,18 @@ function TimerContent() {
             {/* Quick Action Buttons (Presets, Reset & Complete Session XP) */}
             <div className="flex items-center gap-2 flex-wrap justify-center">
               {/* Presets */}
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/15">
+              <div
+                className={`flex items-center p-1 rounded-xl bg-black/40 border border-white/15 ${
+                  isFullscreen ? 'gap-1.5 sm:gap-2' : 'gap-1'
+                }`}
+              >
                 {[25, 45, 60].map((m) => (
                   <button
                     key={m}
                     onClick={() => setPresetMinutes(m)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`rounded-lg font-bold transition-all ${
+                      isFullscreen ? 'px-3.5 py-1.5 text-sm sm:text-base' : 'px-2.5 py-1 text-xs'
+                    } ${
                       totalSeconds === m * 60
                         ? 'bg-pink-600 text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
@@ -950,7 +1057,9 @@ function TimerContent() {
                 ))}
                 <button
                   onClick={addFiveMinutes}
-                  className="px-2 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                  className={`rounded-lg font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-colors ${
+                    isFullscreen ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs'
+                  }`}
                   title="إضافة 5 دقائق"
                 >
                   +5د
@@ -960,10 +1069,12 @@ function TimerContent() {
               {/* Reset */}
               <button
                 onClick={handleReset}
-                className="p-2 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-slate-300 hover:text-white transition-all"
+                className={`rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-slate-300 hover:text-white transition-all ${
+                  isFullscreen ? 'p-2.5 sm:p-3' : 'p-2'
+                }`}
                 title="إعادة ضبط المؤقت"
               >
-                <RotateCcw size={15} />
+                <RotateCcw size={isFullscreen ? 18 : 15} />
               </button>
 
               {/* Early complete & log XP */}
@@ -971,9 +1082,11 @@ function TimerContent() {
                 <button
                   onClick={() => completeSession()}
                   disabled={sessionLoading}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+                  className={`flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all ${
+                    isFullscreen ? 'px-4 py-2 text-sm sm:text-base' : 'px-3.5 py-1.5 text-xs'
+                  }`}
                 >
-                  <CheckCircle2 size={14} />
+                  <CheckCircle2 size={isFullscreen ? 17 : 14} />
                   <span>إنهاء واحتساب XP</span>
                 </button>
               )}
