@@ -13,28 +13,18 @@ import {
   X,
   Loader2,
   CheckCircle2,
-  Circle,
-  Flag,
-  FileText,
-  Bookmark,
-  Sparkles,
-  Brain,
-  LayoutGrid,
-  ListFilter,
   Check,
   HelpCircle,
-  Trophy,
+  Brain,
   Star,
   Award,
   Flame,
   Layers,
-  ChevronDown,
-  ChevronUp,
+  Sparkles,
 } from 'lucide-react'
 import { SUBJECTS, SpacedReviewTopic } from '@/lib/types'
 
-type ActiveCategoryTab = 'assignments' | 'exams' | 'reviews' | 'lectures' | 'backlog'
-type ViewMode = 'categories' | 'subjects'
+type CategoryFilter = 'all' | 'assignments' | 'exams' | 'reviews' | 'lectures' | 'backlog'
 
 // In-memory client cache for instantaneous tab switching and navigation
 let cachedTasksData: {
@@ -46,9 +36,9 @@ let cachedTasksData: {
 } | null = null
 
 export default function TasksPage() {
+  // Selected Subject: null = كل المواد, or subject ID (6, 7, 8, 9)
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<ActiveCategoryTab>('assignments')
-  const [viewMode, setViewMode] = useState<ViewMode>('categories')
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   const [loading, setLoading] = useState(!cachedTasksData)
   const [data, setData] = useState<{
     assignments: any[]
@@ -70,7 +60,7 @@ export default function TasksPage() {
   const [reviewModalTopic, setReviewModalTopic] = useState<SpacedReviewTopic | null>(null)
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [earnedXpToast, setEarnedXpToast] = useState<{ xp: number; topic: string } | null>(null)
-  const [reviewFilter, setReviewFilter] = useState<'due' | 'all'>('due')
+  const [reviewScope, setReviewScope] = useState<'due' | 'all'>('due')
 
   // Add Item Modal State
   const [showAddModal, setShowAddModal] = useState(false)
@@ -84,14 +74,6 @@ export default function TasksPage() {
   const [formHours, setFormHours] = useState('1')
   const [formExamType, setFormExamType] = useState('quiz')
   const [formNotes, setFormNotes] = useState('')
-
-  // Expanded subjects in "subjects" view mode
-  const [expandedSubjectIds, setExpandedSubjectIds] = useState<Record<number, boolean>>({
-    6: true,
-    7: true,
-    8: true,
-    9: true,
-  })
 
   // Fetch tasks and spaced repetition reviews
   const fetchTasks = async (showLoading = !cachedTasksData) => {
@@ -122,35 +104,44 @@ export default function TasksPage() {
   // Today's date string (YYYY-MM-DD)
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  // Filter items by subject (if selectedSubjectId is set)
-  const filteredData = useMemo(() => {
-    const filterBySub = (items: any[]) =>
+  // Filter items by selected subject
+  const currentSubject = useMemo(
+    () => SUBJECTS.find((s) => s.id === selectedSubjectId),
+    [selectedSubjectId]
+  )
+
+  const subjectFiltered = useMemo(() => {
+    const filterSub = (items: any[]) =>
       selectedSubjectId ? items.filter((item) => item.subject_id === selectedSubjectId) : items
 
     return {
-      assignments: filterBySub(data.assignments),
-      exams: filterBySub(data.exams),
-      backlog: filterBySub(data.backlog),
-      lectures: filterBySub(data.lectures),
-      reviews: filterBySub(data.reviews),
+      assignments: filterSub(data.assignments),
+      exams: filterSub(data.exams),
+      backlog: filterSub(data.backlog),
+      lectures: filterSub(data.lectures),
+      reviews: filterSub(data.reviews),
     }
   }, [data, selectedSubjectId])
 
-  // Spaced Repetition Due vs All
-  const displayedReviews = useMemo(() => {
-    if (reviewFilter === 'due') {
-      return filteredData.reviews.filter((r) => {
-        if (!r.next_review_date) return true
-        const reviewDate = r.next_review_date.split('T')[0]
-        return reviewDate <= todayStr
-      })
-    }
-    return filteredData.reviews
-  }, [filteredData.reviews, reviewFilter, todayStr])
+  // Spaced Repetition Due vs All (Only count studied topics: mastery_level > 0)
+  const dueReviews = useMemo(() => {
+    return subjectFiltered.reviews.filter((r) => {
+      const isStudied = (r.mastery_level || 0) > 0
+      const isDue = !r.next_review_date || r.next_review_date.split('T')[0] <= todayStr
+      return isStudied && isDue
+    })
+  }, [subjectFiltered.reviews, todayStr])
 
-  // Calculate task counts per subject
+  const allStudiedReviews = useMemo(() => {
+    return subjectFiltered.reviews.filter((r) => (r.mastery_level || 0) > 0)
+  }, [subjectFiltered.reviews])
+
+  // Calculate task counts per subject (REALISTIC: only true pending items + true due reviews)
   const subjectTaskCounts = useMemo(() => {
-    const counts: Record<number, { assignments: number; exams: number; backlog: number; lectures: number; reviews: number; total: number }> = {}
+    const counts: Record<
+      number,
+      { assignments: number; exams: number; backlog: number; lectures: number; reviews: number; total: number }
+    > = {}
 
     SUBJECTS.forEach((s) => {
       counts[s.id] = { assignments: 0, exams: 0, backlog: 0, lectures: 0, reviews: 0, total: 0 }
@@ -184,8 +175,10 @@ export default function TasksPage() {
       }
     })
 
+    // Reviews: only count if mastery_level > 0 AND due today or overdue
     data.reviews.forEach((r) => {
-      const isDue = !r.next_review_date || r.next_review_date.split('T')[0] <= todayStr
+      const isStudied = (r.mastery_level || 0) > 0
+      const isDue = isStudied && (!r.next_review_date || r.next_review_date.split('T')[0] <= todayStr)
       if (isDue && counts[r.subject_id]) {
         counts[r.subject_id].reviews++
         counts[r.subject_id].total++
@@ -195,32 +188,21 @@ export default function TasksPage() {
     return counts
   }, [data, todayStr])
 
-  // Tab counts for current subject filter
-  const currentTabCounts = useMemo(() => {
-    const dueReviewsCount = filteredData.reviews.filter((r) => {
-      if (!r.next_review_date) return true
-      return r.next_review_date.split('T')[0] <= todayStr
-    }).length
+  // Total pending tasks across all subjects
+  const totalGlobalPending = useMemo(() => {
+    return Object.values(subjectTaskCounts).reduce((acc, c) => acc + c.total, 0)
+  }, [subjectTaskCounts])
 
-    return {
-      assignments: filteredData.assignments.filter((a) => a.status !== 'done').length,
-      exams: filteredData.exams.filter((e) => e.status !== 'done').length,
-      reviews: dueReviewsCount,
-      lectures: filteredData.lectures.filter((l) => l.status !== 'done').length,
-      backlog: filteredData.backlog.filter((b) => b.status !== 'cleared').length,
-    }
-  }, [filteredData, todayStr])
-
-  // Total active tasks across all subjects
-  const totalActiveTasks = useMemo(() => {
-    return (
-      data.assignments.filter((a) => a.status !== 'done').length +
-      data.exams.filter((e) => e.status !== 'done').length +
-      data.lectures.filter((l) => l.status !== 'done').length +
-      data.backlog.filter((b) => b.status !== 'cleared').length +
-      data.reviews.filter((r) => !r.next_review_date || r.next_review_date.split('T')[0] <= todayStr).length
-    )
-  }, [data, todayStr])
+  // Category counts for current view
+  const categoryCounts = useMemo(() => {
+    const a = subjectFiltered.assignments.filter((i) => i.status !== 'done').length
+    const e = subjectFiltered.exams.filter((i) => i.status !== 'done').length
+    const r = dueReviews.length
+    const l = subjectFiltered.lectures.filter((i) => i.status !== 'done').length
+    const b = subjectFiltered.backlog.filter((i) => i.status !== 'cleared').length
+    const all = a + e + r + l + b
+    return { all, assignments: a, exams: e, reviews: r, lectures: l, backlog: b }
+  }, [subjectFiltered, dueReviews])
 
   // Toggle status of regular tasks
   const handleToggleStatus = async (table: string, id: number, currentStatus: string) => {
@@ -389,30 +371,27 @@ export default function TasksPage() {
     if (subjectId) setFormSubjectId(subjectId)
     else if (selectedSubjectId) setFormSubjectId(selectedSubjectId)
     if (category) setFormCategory(category)
-    else if (activeTab !== 'reviews') setFormCategory(activeTab)
     setCreateError(null)
     setShowAddModal(true)
   }
 
-  const selectedSubjectObj = SUBJECTS.find((s) => s.id === selectedSubjectId)
-
   return (
-    <main className="min-h-screen pb-28 pt-8 px-4 sm:px-6" dir="rtl">
+    <main className="min-h-screen pb-28 pt-8 px-4 sm:px-6 max-w-5xl mx-auto" dir="rtl">
       {/* ─── Top Main Header ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-5 bg-gradient-to-b from-cyan-400 to-indigo-500 rounded-full inline-block shadow-[0_0_10px_#06b6d4]" />
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-6 bg-gradient-to-b from-cyan-400 to-indigo-500 rounded-full inline-block shadow-[0_0_12px_#06b6d4]" />
             <h1 className="text-xl sm:text-2xl font-black text-white">مهام ومناهج المواد</h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            مساحة مخصصة لكل مادة: واجبات، امتحانات، ومراجعات تكرار متباعد ذكية
+            اختر المادة لتصفح تكليفاتها ومواعيد امتحاناتها ومراجعات التكرار المتباعد
           </p>
         </div>
 
         <button
           onClick={() => openAddModalForSubject()}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 hover:brightness-110 active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 hover:brightness-110 active:scale-95 transition-all"
         >
           <Plus size={16} />
           <span>إضافة جديد</span>
@@ -426,866 +405,831 @@ export default function TasksPage() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-emerald-600/20 via-teal-500/20 to-indigo-600/20 border border-emerald-500/40 flex items-center justify-between gap-3 shadow-lg shadow-emerald-600/10"
+            className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600/20 via-teal-500/20 to-indigo-600/20 border border-emerald-500/40 flex items-center justify-between gap-3 shadow-lg shadow-emerald-600/10"
           >
             <div className="flex items-center gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-emerald-500/30 text-emerald-300 flex items-center justify-center font-bold text-base">
                 ✨
               </span>
               <div>
-                <p className="text-xs font-black text-emerald-300">أحسنت! تمت مراجعة التكرار المتباعد بنجاح</p>
-                <p className="text-[11px] text-slate-300 truncate max-w-[220px] sm:max-w-xs">{earnedXpToast.topic}</p>
+                <p className="text-xs font-black text-emerald-300">أحسنت! تمت مراجعة التكرار المتباعد واحتساب نقاط الخبرة</p>
+                <p className="text-[11px] text-slate-300 truncate max-w-[220px] sm:max-w-md">{earnedXpToast.topic}</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs shadow-sm">
+            <span className="px-3 py-1 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs shadow-sm">
               +{earnedXpToast.xp} XP
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ─── Primary Subject Filter Bar (شريط المواد الذكي) ─────────────── */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2 px-1">
-          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
-            <BookOpen size={13} className="text-indigo-400" />
-            <span>اختر المادة لتصفح مهامها:</span>
+      {/* ─── Dynamic Responsive Subject Selector Grid ───────────────────── */}
+      {/* 5 Distinct Cards - 100% visible on both mobile and desktop (NO HIDDEN SCROLL!) */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2.5 px-1">
+          <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+            <BookOpen size={14} className="text-indigo-400" />
+            <span>قائمة المواد الدراسية:</span>
           </span>
-
-          {/* View Mode Toggle Button */}
-          <div className="flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800">
-            <button
-              onClick={() => setViewMode('categories')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                viewMode === 'categories'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="عرض حسب التصنيف"
-            >
-              <ListFilter size={12} />
-              <span>حسب النوع</span>
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('subjects')
-                setSelectedSubjectId(null)
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                viewMode === 'subjects'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="عرض مجمّع لكل مادة"
-            >
-              <LayoutGrid size={12} />
-              <span>مساحات المواد</span>
-            </button>
-          </div>
+          <span className="text-[11px] text-slate-500 font-mono">
+            {selectedSubjectId ? `محددة: ${currentSubject?.name}` : 'عرض كل المواد'}
+          </span>
         </div>
 
-        {/* Scrollable Subject Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth">
-          {/* ALL SUBJECTS PILL */}
+        {/* 5-Column Grid on desktop, 3+2 or 5 on mobile */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
+          {/* 1. ALL SUBJECTS */}
           <button
             onClick={() => setSelectedSubjectId(null)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap shrink-0 border ${
+            className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
               selectedSubjectId === null
-                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border-indigo-400/50 shadow-md shadow-indigo-600/25 scale-[1.02]'
-                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-850'
+                ? 'bg-gradient-to-b from-indigo-600/30 to-indigo-900/40 border-indigo-500/70 shadow-lg shadow-indigo-600/20 ring-1 ring-indigo-400/40 scale-[1.02]'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
             }`}
           >
-            <span>🌟</span>
-            <span>كل المواد</span>
+            <span className="text-2xl">🌟</span>
+            <span className={`text-xs font-black ${selectedSubjectId === null ? 'text-white' : 'text-slate-300'}`}>
+              كل المواد
+            </span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                selectedSubjectId === null ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                selectedSubjectId === null
+                  ? 'bg-indigo-500 text-white'
+                  : 'bg-slate-800 text-slate-400'
               }`}
             >
-              {totalActiveTasks}
+              {totalGlobalPending} مهام
             </span>
+            {selectedSubjectId === null && (
+              <span className="absolute -bottom-1 w-6 h-1 bg-indigo-500 rounded-full shadow-[0_0_8px_#6366f1]" />
+            )}
           </button>
 
-          {/* INDIVIDUAL SUBJECT PILLS */}
-          {SUBJECTS.map((s) => {
-            const isSelected = selectedSubjectId === s.id
-            const count = subjectTaskCounts[s.id]?.total || 0
-
+          {/* 2. ARABIC (اللغة العربية) */}
+          {(() => {
+            const s = SUBJECTS.find((sub) => sub.id === 6)!
+            const isSelected = selectedSubjectId === 6
+            const count = subjectTaskCounts[6]?.total || 0
             return (
               <button
-                key={s.id}
-                onClick={() => {
-                  setSelectedSubjectId(s.id)
-                  setViewMode('categories')
-                }}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap shrink-0 border ${
+                key={6}
+                onClick={() => setSelectedSubjectId(6)}
+                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
                   isSelected
-                    ? `bg-gradient-to-r ${s.color} text-white border-white/30 shadow-lg scale-[1.02]`
-                    : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-850'
+                    ? 'bg-gradient-to-b from-emerald-600/30 to-teal-900/40 border-emerald-500/70 shadow-lg shadow-emerald-600/20 ring-1 ring-emerald-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
                 }`}
               >
-                <span>{s.icon}</span>
-                <span>{s.name}</span>
-                {count > 0 && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                      isSelected ? 'bg-black/30 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    {count}
-                  </span>
+                <span className="text-2xl">{s.icon}</span>
+                <span className={`text-xs font-black ${isSelected ? 'text-emerald-300' : 'text-slate-300'}`}>
+                  {s.name}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    isSelected ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {count} معلقة
+                </span>
+                {isSelected && (
+                  <span className="absolute -bottom-1 w-6 h-1 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]" />
                 )}
               </button>
             )
-          })}
+          })()}
+
+          {/* 3. PROGRAMMING (البرمجة) */}
+          {(() => {
+            const s = SUBJECTS.find((sub) => sub.id === 7)!
+            const isSelected = selectedSubjectId === 7
+            const count = subjectTaskCounts[7]?.total || 0
+            return (
+              <button
+                key={7}
+                onClick={() => setSelectedSubjectId(7)}
+                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
+                  isSelected
+                    ? 'bg-gradient-to-b from-blue-600/30 to-indigo-900/40 border-blue-500/70 shadow-lg shadow-blue-600/20 ring-1 ring-blue-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
+                }`}
+              >
+                <span className="text-2xl">{s.icon}</span>
+                <span className={`text-xs font-black ${isSelected ? 'text-blue-300' : 'text-slate-300'}`}>
+                  {s.name}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    isSelected ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {count} معلقة
+                </span>
+                {isSelected && (
+                  <span className="absolute -bottom-1 w-6 h-1 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
+                )}
+              </button>
+            )
+          })()}
+
+          {/* 4. ENGLISH (اللغة الإنجليزية) */}
+          {(() => {
+            const s = SUBJECTS.find((sub) => sub.id === 8)!
+            const isSelected = selectedSubjectId === 8
+            const count = subjectTaskCounts[8]?.total || 0
+            return (
+              <button
+                key={8}
+                onClick={() => setSelectedSubjectId(8)}
+                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
+                  isSelected
+                    ? 'bg-gradient-to-b from-purple-600/30 to-violet-900/40 border-purple-500/70 shadow-lg shadow-purple-600/20 ring-1 ring-purple-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
+                }`}
+              >
+                <span className="text-2xl">{s.icon}</span>
+                <span className={`text-xs font-black ${isSelected ? 'text-purple-300' : 'text-slate-300'}`}>
+                  {s.name}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    isSelected ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {count} معلقة
+                </span>
+                {isSelected && (
+                  <span className="absolute -bottom-1 w-6 h-1 bg-purple-500 rounded-full shadow-[0_0_8px_#a855f7]" />
+                )}
+              </button>
+            )
+          })()}
+
+          {/* 5. HISTORY (التاريخ) — Prominently placed and 100% visible! */}
+          {(() => {
+            const s = SUBJECTS.find((sub) => sub.id === 9)!
+            const isSelected = selectedSubjectId === 9
+            const count = subjectTaskCounts[9]?.total || 0
+            return (
+              <button
+                key={9}
+                onClick={() => setSelectedSubjectId(9)}
+                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
+                  isSelected
+                    ? 'bg-gradient-to-b from-amber-600/30 to-orange-900/40 border-amber-500/70 shadow-lg shadow-amber-600/20 ring-1 ring-amber-400/40 scale-[1.02]'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
+                }`}
+              >
+                <span className="text-2xl">{s.icon}</span>
+                <span className={`text-xs font-black ${isSelected ? 'text-amber-300' : 'text-slate-300'}`}>
+                  {s.name}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    isSelected ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {count} معلقة
+                </span>
+                {isSelected && (
+                  <span className="absolute -bottom-1 w-6 h-1 bg-amber-500 rounded-full shadow-[0_0_8px_#f59e0b]" />
+                )}
+              </button>
+            )
+          })()}
         </div>
       </div>
 
-      {/* ─── Selected Subject Focus Banner (When a single subject is picked) ─ */}
-      {selectedSubjectObj && (
+      {/* ─── Selected Subject Focus Banner ──────────────────────────────── */}
+      {currentSubject && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-5 p-4 rounded-3xl glass-card border border-slate-800 relative overflow-hidden"
+          className="mb-5 p-4 sm:p-5 rounded-3xl glass-card border border-slate-800 relative overflow-hidden"
         >
           <div
-            className={`absolute -top-12 -left-12 w-36 h-36 bg-gradient-to-br ${selectedSubjectObj.color} opacity-20 rounded-full blur-2xl pointer-events-none`}
+            className={`absolute -top-12 -left-12 w-44 h-44 bg-gradient-to-br ${currentSubject.color} opacity-20 rounded-full blur-2xl pointer-events-none`}
           />
           <div className="flex items-center justify-between gap-3 relative z-10">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3.5">
               <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${selectedSubjectObj.color} flex items-center justify-center text-2xl shadow-lg ring-1 ring-white/20`}
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${currentSubject.color} flex items-center justify-center text-2xl shadow-lg ring-1 ring-white/20`}
               >
-                {selectedSubjectObj.icon}
+                {currentSubject.icon}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-black text-white">{selectedSubjectObj.name}</h2>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
+                  <h2 className="text-base sm:text-lg font-black text-white">{currentSubject.name}</h2>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-900/90 text-slate-300 border border-slate-700/60">
                     مساحة المادة
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400 flex-wrap">
-                  <span>{`${subjectTaskCounts[selectedSubjectObj.id]?.assignments || 0} واجب`}</span>
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400 flex-wrap">
+                  <span className="text-emerald-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.assignments || 0} واجبات`}</span>
                   <span>•</span>
-                  <span>{`${subjectTaskCounts[selectedSubjectObj.id]?.exams || 0} امتحان`}</span>
+                  <span className="text-amber-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.exams || 0} امتحانات`}</span>
                   <span>•</span>
-                  <span className="text-amber-400 font-semibold">{`${subjectTaskCounts[selectedSubjectObj.id]?.reviews || 0} مراجعة تكرار`}</span>
+                  <span className="text-purple-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.reviews || 0} مراجعات تكرار`}</span>
+                  <span>•</span>
+                  <span className="text-cyan-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.lectures || 0} محاضرات`}</span>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => openAddModalForSubject(selectedSubjectObj.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition-all shadow-sm"
+              onClick={() => openAddModalForSubject(currentSubject.id)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-750 text-white border border-slate-700 text-xs font-bold transition-all shadow-sm"
             >
-              <Plus size={14} />
+              <Plus size={14} className="text-emerald-400" />
               <span>إضافة للمادة</span>
             </button>
           </div>
         </motion.div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* MODE 1: CATEGORY TABS VIEW (الواجبات، الامتحانات، التكرار المتباعد...) */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {viewMode === 'categories' && (
-        <>
-          {/* Category Tabs Switcher (5 Tabs) */}
-          <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl glass-card mb-5 border-slate-800 text-center">
-            {/* 1. Assignments */}
-            <button
-              onClick={() => setActiveTab('assignments')}
-              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === 'assignments'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="block text-[11px] sm:text-xs">الواجبات</span>
-              {currentTabCounts.assignments > 0 && (
-                <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-950 text-emerald-200 border border-emerald-400/30 font-mono">
-                  {currentTabCounts.assignments}
-                </span>
-              )}
-            </button>
-
-            {/* 2. Exams */}
-            <button
-              onClick={() => setActiveTab('exams')}
-              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === 'exams'
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="block text-[11px] sm:text-xs">الامتحانات</span>
-              {currentTabCounts.exams > 0 && (
-                <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-200 border border-amber-400/30 font-mono">
-                  {currentTabCounts.exams}
-                </span>
-              )}
-            </button>
-
-            {/* 3. Spaced Repetition (SM-2) */}
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === 'reviews'
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="block text-[11px] sm:text-xs">التكرار</span>
-              {currentTabCounts.reviews > 0 && (
-                <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-purple-950 text-purple-200 border border-purple-400/30 font-mono">
-                  {currentTabCounts.reviews}
-                </span>
-              )}
-            </button>
-
-            {/* 4. Lectures */}
-            <button
-              onClick={() => setActiveTab('lectures')}
-              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === 'lectures'
-                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="block text-[11px] sm:text-xs">المحاضرات</span>
-              {currentTabCounts.lectures > 0 && (
-                <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-950 text-cyan-200 border border-cyan-400/30 font-mono">
-                  {currentTabCounts.lectures}
-                </span>
-              )}
-            </button>
-
-            {/* 5. Backlog */}
-            <button
-              onClick={() => setActiveTab('backlog')}
-              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === 'backlog'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="block text-[11px] sm:text-xs">التراكمات</span>
-              {currentTabCounts.backlog > 0 && (
-                <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-200 border border-rose-400/30 font-mono">
-                  {currentTabCounts.backlog}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Loading Skeleton */}
-          {loading ? (
-            <div className="space-y-3 animate-pulse">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-6 h-6 rounded-lg bg-white/10 shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-40 bg-white/10 rounded" />
-                      <div className="h-3 w-24 bg-white/5 rounded" />
-                    </div>
-                  </div>
-                  <div className="h-7 w-16 rounded-xl bg-white/5 shrink-0" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* ────────────────── 1. ASSIGNMENTS TAB ────────────────── */}
-              {activeTab === 'assignments' && (
-                <>
-                  {filteredData.assignments.length === 0 ? (
-                    <EmptyState
-                      title={selectedSubjectObj ? `مفيش واجبات في ${selectedSubjectObj.name}` : 'مفيش واجبات مسجلة حالياً'}
-                      subtitle="اضغط على زر إضافة جديد عشان تسجل واجب جديد"
-                      onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'assignments')}
-                    />
-                  ) : (
-                    filteredData.assignments.map((item) => {
-                      const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                      const isDone = item.status === 'done'
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 transition-all ${
-                            isDone ? 'opacity-60 bg-slate-900/40' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <button
-                              onClick={() => handleToggleStatus('assignments', item.id, item.status)}
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                                isDone
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'border-2 border-slate-600 hover:border-emerald-400 text-transparent'
-                              }`}
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={`font-bold text-sm text-slate-100 truncate ${
-                                  isDone ? 'line-through text-slate-400' : ''
-                                }`}
-                              >
-                                {item.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {subject && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                    {subject.icon} {subject.name}
-                                  </span>
-                                )}
-                                {item.due_date && (
-                                  <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
-                                    <Clock size={11} className="text-amber-400" />
-                                    <span>{new Date(item.due_date).toLocaleDateString('ar-EG')}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                              item.priority === 'high'
-                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                                : item.priority === 'medium'
-                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                : 'bg-slate-800 text-slate-400 border-slate-700'
-                            }`}
-                          >
-                            {item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'عادي'}
-                          </span>
-                        </div>
-                      )
-                    })
-                  )}
-                </>
-              )}
-
-              {/* ────────────────── 2. EXAMS TAB ──────────────────────── */}
-              {activeTab === 'exams' && (
-                <>
-                  {filteredData.exams.length === 0 ? (
-                    <EmptyState
-                      title={selectedSubjectObj ? `مفيش امتحانات في ${selectedSubjectObj.name}` : 'مفيش امتحانات مسجلة'}
-                      subtitle="سجل مواعيد الامتحانات والـ Quizzes عشان ترتب جدولك بدري"
-                      onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'exams')}
-                    />
-                  ) : (
-                    filteredData.exams.map((item) => {
-                      const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                      const isDone = item.status === 'done'
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
-                            isDone ? 'opacity-60 bg-slate-900/40' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <button
-                              onClick={() => handleToggleStatus('exams', item.id, item.status)}
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                                isDone
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'border-2 border-slate-600 hover:border-amber-400 text-transparent'
-                              }`}
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-bold text-sm text-slate-100 truncate ${isDone ? 'line-through' : ''}`}>
-                                {item.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {subject && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                    {subject.icon} {subject.name}
-                                  </span>
-                                )}
-                                {item.exam_date && (
-                                  <span className="text-[10px] text-amber-400 flex items-center gap-1 font-bold">
-                                    <Calendar size={11} />
-                                    <span>{new Date(item.exam_date).toLocaleDateString('ar-EG')}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            {item.exam_type || 'اختبار'}
-                          </span>
-                        </div>
-                      )
-                    })
-                  )}
-                </>
-              )}
-
-              {/* ────────────────── 3. SPACED REPETITION TAB (التكرار المتباعد) ─── */}
-              {activeTab === 'reviews' && (
-                <>
-                  {/* Spaced Repetition Intro & Subfilter */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/20 mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Brain size={18} className="text-purple-400" />
-                        <h3 className="font-bold text-xs text-white">نظام التكرار المتباعد الخوارزمي (SM-2)</h3>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold text-purple-300 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30">
-                        {`${displayedReviews.length} درس`}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
-                      تكرار الدروس على فترات متباعدة يرسخ المعلومات في الذاكرة طويلة المدى ويمنع النسيان.
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setReviewFilter('due')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                          reviewFilter === 'due'
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        🔥 المستحق الآن ({currentTabCounts.reviews})
-                      </button>
-                      <button
-                        onClick={() => setReviewFilter('all')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                          reviewFilter === 'all'
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        📅 كل الدروس المجدولة ({filteredData.reviews.length})
-                      </button>
-                    </div>
-                  </div>
-
-                  {displayedReviews.length === 0 ? (
-                    <div className="glass-card rounded-3xl p-8 text-center border-slate-800/80">
-                      <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center mx-auto text-purple-300 mb-3 border border-purple-500/30">
-                        <CheckCircle2 size={24} />
-                      </div>
-                      <h3 className="font-bold text-sm text-slate-200">
-                        {reviewFilter === 'due' ? 'ممتاز! مفيش مراجعات مستحقة الآن' : 'لا توجد دروس مسجلة'}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
-                        كل المراجعات في موعدها المضبوط، عُد لاحقاً لمتابعة جدول التكرار المتباعد
-                      </p>
-                    </div>
-                  ) : (
-                    displayedReviews.map((topic) => {
-                      const subject = SUBJECTS.find((s) => s.id === topic.subject_id)
-                      const isDue = !topic.next_review_date || topic.next_review_date.split('T')[0] <= todayStr
-
-                      return (
-                        <div
-                          key={topic.id}
-                          className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all ${
-                            isDue
-                              ? 'border-purple-500/40 bg-purple-950/15 shadow-sm shadow-purple-900/10'
-                              : 'border-slate-800/80 bg-slate-900/40'
-                          }`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {subject && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                  {subject.icon} {subject.name}
-                                </span>
-                              )}
-                              {topic.chapter && (
-                                <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                                  {topic.chapter}
-                                </span>
-                              )}
-                            </div>
-
-                            <h4 className="font-bold text-sm text-slate-100 truncate">{topic.topic}</h4>
-
-                            <div className="flex items-center gap-3 mt-1.5 text-[10px]">
-                              {/* Due Date Indicator */}
-                              {isDue ? (
-                                <span className="text-amber-400 font-bold flex items-center gap-1">
-                                  <Flame size={12} className="text-orange-400" />
-                                  <span>مستحق المراجعة الآن!</span>
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 font-mono flex items-center gap-1">
-                                  <Calendar size={11} />
-                                  <span>{`المراجعة: ${new Date(topic.next_review_date!).toLocaleDateString('ar-EG')}`}</span>
-                                </span>
-                              )}
-
-                              {/* Mastery Stars */}
-                              <span className="text-slate-400 flex items-center gap-1">
-                                <Star size={11} className={topic.mastery_level > 0 ? 'text-amber-400 fill-amber-400' : 'text-slate-600'} />
-                                <span>{`المستوى: ${topic.mastery_level || 0}/5`}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Rate Recall Button */}
-                          <button
-                            onClick={() => setReviewModalTopic(topic)}
-                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition-all shrink-0 flex items-center gap-1"
-                          >
-                            <Brain size={14} />
-                            <span>مراجعة</span>
-                          </button>
-                        </div>
-                      )
-                    })
-                  )}
-                </>
-              )}
-
-              {/* ────────────────── 4. LECTURES TAB ───────────────────── */}
-              {activeTab === 'lectures' && (
-                <>
-                  {filteredData.lectures.length === 0 ? (
-                    <EmptyState
-                      title={selectedSubjectObj ? `مفيش محاضرات في ${selectedSubjectObj.name}` : 'مفيش محاضرات مسجلة'}
-                      subtitle="سجل مواعيد حصصك والسناتر أو المنصات هنا"
-                      onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'lectures')}
-                    />
-                  ) : (
-                    filteredData.lectures.map((item) => {
-                      const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                      const isAttended = item.status === 'done'
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
-                            isAttended ? 'opacity-60 bg-slate-900/40' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <button
-                              onClick={() => handleToggleStatus('lectures', item.id, item.status)}
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                                isAttended
-                                  ? 'bg-cyan-500 text-white'
-                                  : item.status === 'missed'
-                                  ? 'bg-rose-500/40 text-rose-300 border-2 border-rose-500'
-                                  : 'border-2 border-slate-600 hover:border-cyan-400 text-transparent'
-                              }`}
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-bold text-sm text-slate-100 truncate ${isAttended ? 'line-through' : ''}`}>
-                                {item.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {subject && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                    {subject.icon} {subject.name}
-                                  </span>
-                                )}
-                                {item.date && (
-                                  <span className="text-[10px] text-cyan-400 flex items-center gap-1 font-bold">
-                                    <Calendar size={11} />
-                                    <span>{new Date(item.date).toLocaleDateString('ar-EG')}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                            {isAttended ? 'تم الحضور ✅' : item.status === 'missed' ? 'غائب ❌' : 'قادمة 📅'}
-                          </span>
-                        </div>
-                      )
-                    })
-                  )}
-                </>
-              )}
-
-              {/* ────────────────── 5. BACKLOG TAB ────────────────────── */}
-              {activeTab === 'backlog' && (
-                <>
-                  {filteredData.backlog.length === 0 ? (
-                    <EmptyState
-                      title="عاش! مفيش أي تراكمات مسجلة"
-                      subtitle="لو فيه درس متراكم حطه هنا عشان نجدوله في جلسات المذاكرة"
-                      onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'backlog')}
-                    />
-                  ) : (
-                    filteredData.backlog.map((item) => {
-                      const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                      const isCleared = item.status === 'cleared'
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
-                            isCleared ? 'opacity-60' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <button
-                              onClick={() => handleToggleStatus('backlog', item.id, item.status)}
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                                isCleared
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'border-2 border-slate-600 hover:border-rose-400 text-transparent'
-                              }`}
-                            >
-                              <CheckCircle2 size={16} />
-                            </button>
-
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-bold text-sm text-slate-100 truncate ${isCleared ? 'line-through' : ''}`}>
-                                {item.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {subject && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                    {subject.icon} {subject.name}
-                                  </span>
-                                )}
-                                <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
-                                  <Clock size={11} className="text-rose-400" />
-                                  <span>{`${item.estimated_hours || 1} ساعة تقديرية`}</span>
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <span
-                            className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${
-                              isCleared
-                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
-                            }`}
-                          >
-                            {isCleared ? 'تم التصفية ✅' : 'متراكم ⚠️'}
-                          </span>
-                        </div>
-                      )
-                    })
-                  )}
-                </>
-              )}
-            </div>
+      {/* ─── Dynamic Category Filter Tabs ───────────────────────────────── */}
+      <div className="grid grid-cols-6 gap-1 p-1 rounded-2xl glass-card mb-5 border-slate-800 text-center">
+        {/* All */}
+        <button
+          onClick={() => setCategoryFilter('all')}
+          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            categoryFilter === 'all'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="block text-[11px] sm:text-xs">الكل</span>
+          {categoryCounts.all > 0 && (
+            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-indigo-950 text-indigo-200 border border-indigo-400/30 font-mono">
+              {categoryCounts.all}
+            </span>
           )}
-        </>
-      )}
+        </button>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* MODE 2: SUBJECT WORKSPACES MATRIX (مساحات مخصصة لكل مادة بمهامها)   */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {viewMode === 'subjects' && (
-        <div className="space-y-5">
-          {SUBJECTS.map((s) => {
-            const isExpanded = expandedSubjectIds[s.id] ?? true
-            const subAssignments = data.assignments.filter((a) => a.subject_id === s.id && a.status !== 'done')
-            const subExams = data.exams.filter((e) => e.subject_id === s.id && e.status !== 'done')
-            const subLectures = data.lectures.filter((l) => l.subject_id === s.id && l.status !== 'done')
-            const subBacklog = data.backlog.filter((b) => b.subject_id === s.id && b.status !== 'cleared')
-            const subReviews = data.reviews.filter((r) => r.subject_id === s.id && (!r.next_review_date || r.next_review_date.split('T')[0] <= todayStr))
-            const totalPending = subAssignments.length + subExams.length + subLectures.length + subBacklog.length + subReviews.length
+        {/* Assignments */}
+        <button
+          onClick={() => setCategoryFilter('assignments')}
+          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            categoryFilter === 'assignments'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="block text-[11px] sm:text-xs">الواجبات</span>
+          {categoryCounts.assignments > 0 && (
+            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-950 text-emerald-200 border border-emerald-400/30 font-mono">
+              {categoryCounts.assignments}
+            </span>
+          )}
+        </button>
 
-            return (
-              <div
-                key={s.id}
-                className="glass-card rounded-3xl border border-slate-800/90 overflow-hidden shadow-xl"
-              >
-                {/* Subject Header Banner */}
-                <div className={`p-4 bg-gradient-to-r ${s.color} bg-opacity-20 flex items-center justify-between`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-black/30 backdrop-blur flex items-center justify-center text-xl shadow-inner">
-                      {s.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-black text-white text-base">{s.name}</h3>
-                      <p className="text-[11px] text-white/80 font-medium">
-                        {totalPending === 0 ? 'لا توجد مهام معلقة' : `${totalPending} مهام ومراجعات متبقية`}
-                      </p>
-                    </div>
+        {/* Exams */}
+        <button
+          onClick={() => setCategoryFilter('exams')}
+          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            categoryFilter === 'exams'
+              ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="block text-[11px] sm:text-xs">الامتحانات</span>
+          {categoryCounts.exams > 0 && (
+            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-200 border border-amber-400/30 font-mono">
+              {categoryCounts.exams}
+            </span>
+          )}
+        </button>
+
+        {/* Spaced Repetition (Reviews) */}
+        <button
+          onClick={() => setCategoryFilter('reviews')}
+          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            categoryFilter === 'reviews'
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="block text-[11px] sm:text-xs">التكرار</span>
+          {categoryCounts.reviews > 0 && (
+            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-purple-950 text-purple-200 border border-purple-400/30 font-mono">
+              {categoryCounts.reviews}
+            </span>
+          )}
+        </button>
+
+        {/* Lectures */}
+        <button
+          onClick={() => setCategoryFilter('lectures')}
+          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            categoryFilter === 'lectures'
+              ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="block text-[11px] sm:text-xs">المحاضرات</span>
+          {categoryCounts.lectures > 0 && (
+            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-950 text-cyan-200 border border-cyan-400/30 font-mono">
+              {categoryCounts.lectures}
+            </span>
+          )}
+        </button>
+
+        {/* Backlog */}
+        <button
+          onClick={() => setCategoryFilter('backlog')}
+          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            categoryFilter === 'backlog'
+              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="block text-[11px] sm:text-xs">التراكمات</span>
+          {categoryCounts.backlog > 0 && (
+            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-200 border border-rose-400/30 font-mono">
+              {categoryCounts.backlog}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ─── Main Content Stream ────────────────────────────────────────── */}
+      {loading ? (
+        <div className="space-y-3 animate-pulse">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-20 rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-6 h-6 rounded-lg bg-white/10 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-40 bg-white/10 rounded" />
+                  <div className="h-3 w-24 bg-white/5 rounded" />
+                </div>
+              </div>
+              <div className="h-7 w-16 rounded-xl bg-white/5 shrink-0" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* SECTION 1: SPACED REPETITION (REVIEWS)                         */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {(categoryFilter === 'all' || categoryFilter === 'reviews') && (
+            <div className="space-y-3">
+              {categoryFilter === 'all' && dueReviews.length > 0 && (
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2 text-xs font-black text-purple-400">
+                    <Brain size={16} />
+                    <span>مراجعات التكرار المتباعد المستحقة اليوم 🔥</span>
                   </div>
+                  <span className="text-[10px] text-purple-300 font-mono bg-purple-500/15 px-2 py-0.5 rounded-full border border-purple-500/30">
+                    {`${dueReviews.length} دروس مستحقة`}
+                  </span>
+                </div>
+              )}
+
+              {categoryFilter === 'reviews' && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/20 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Brain size={18} className="text-purple-400" />
+                      <h3 className="font-bold text-xs text-white">نظام التكرار المتباعد الخوارزمي (SM-2)</h3>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-purple-300 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30">
+                      {reviewScope === 'due' ? `${dueReviews.length} مستحق اليوم` : `${allStudiedReviews.length} درس مجدول`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+                    المراجعة في المواعيد المحددة تمنع نسيان الدروس وتثبتها في الذاكرة الدائمة بدون جهد مضاعف.
+                  </p>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => openAddModalForSubject(s.id)}
-                      className="px-2.5 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-white text-[11px] font-bold flex items-center gap-1 transition-colors"
+                      onClick={() => setReviewScope('due')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        reviewScope === 'due'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      <Plus size={13} />
-                      <span>إضافة</span>
+                      🔥 المستحق الآن ({dueReviews.length})
                     </button>
                     <button
-                      onClick={() =>
-                        setExpandedSubjectIds((prev) => ({ ...prev, [s.id]: !prev[s.id] }))
-                      }
-                      className="p-1.5 rounded-xl bg-black/20 hover:bg-black/40 text-white transition-colors"
+                      onClick={() => setReviewScope('all')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        reviewScope === 'all'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      📅 كل الدروس المفعلة ({allStudiedReviews.length})
                     </button>
                   </div>
                 </div>
+              )}
 
-                {/* Subject Content */}
-                {isExpanded && (
-                  <div className="p-4 space-y-4">
-                    {/* Category Summary Badges */}
-                    <div className="grid grid-cols-4 gap-1.5 text-center">
-                      <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                        <span className="block text-xs font-bold text-emerald-400 font-mono">{subAssignments.length}</span>
-                        <span className="text-[9px] text-slate-400">واجبات</span>
+              {/* Render Reviews */}
+              {(() => {
+                const reviewsToRender = categoryFilter === 'reviews' && reviewScope === 'all' ? allStudiedReviews : dueReviews
+
+                if (categoryFilter === 'reviews' && reviewsToRender.length === 0) {
+                  return (
+                    <EmptyState
+                      title={reviewScope === 'due' ? 'عاش جداً! مفيش مراجعات مستحقة اليوم 🎉' : 'لا توجد دروس قيد المراجعة'}
+                      subtitle="كل دروس المنهج تم مراجعتها في مواعيدها، عُد غداً لجلسة المراجعة القادمة"
+                      onAdd={() => openAddModalForSubject()}
+                    />
+                  )
+                }
+
+                return reviewsToRender.map((topic) => {
+                  const subject = SUBJECTS.find((s) => s.id === topic.subject_id)
+                  const isDue = !topic.next_review_date || topic.next_review_date.split('T')[0] <= todayStr
+
+                  return (
+                    <div
+                      key={`review-${topic.id}`}
+                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all ${
+                        isDue
+                          ? 'border-purple-500/40 bg-purple-950/20 shadow-sm shadow-purple-900/10'
+                          : 'border-slate-800/80 bg-slate-900/40'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {subject && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                              {subject.icon} {subject.name}
+                            </span>
+                          )}
+                          {topic.chapter && (
+                            <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                              {topic.chapter}
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="font-bold text-sm text-slate-100 truncate">{topic.topic}</h4>
+
+                        <div className="flex items-center gap-3 mt-1.5 text-[10px]">
+                          {isDue ? (
+                            <span className="text-amber-400 font-bold flex items-center gap-1">
+                              <Flame size={12} className="text-orange-400" />
+                              <span>مستحق المراجعة الآن!</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-mono flex items-center gap-1">
+                              <Calendar size={11} />
+                              <span>{`المراجعة: ${new Date(topic.next_review_date!).toLocaleDateString('ar-EG')}`}</span>
+                            </span>
+                          )}
+
+                          <span className="text-slate-400 flex items-center gap-1">
+                            <Star size={11} className={topic.mastery_level > 0 ? 'text-amber-400 fill-amber-400' : 'text-slate-600'} />
+                            <span>{`الإتقان: ${topic.mastery_level || 0}/5`}</span>
+                          </span>
+                        </div>
                       </div>
-                      <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                        <span className="block text-xs font-bold text-amber-400 font-mono">{subExams.length}</span>
-                        <span className="text-[9px] text-slate-400">امتحانات</span>
-                      </div>
-                      <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                        <span className="block text-xs font-bold text-purple-400 font-mono">{subReviews.length}</span>
-                        <span className="text-[9px] text-slate-400">تكرار</span>
-                      </div>
-                      <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                        <span className="block text-xs font-bold text-cyan-400 font-mono">{subLectures.length}</span>
-                        <span className="text-[9px] text-slate-400">محاضرات</span>
-                      </div>
+
+                      <button
+                        onClick={() => setReviewModalTopic(topic)}
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition-all shrink-0 flex items-center gap-1"
+                      >
+                        <Brain size={14} />
+                        <span>مراجعة</span>
+                      </button>
                     </div>
+                  )
+                })
+              })()}
+            </div>
+          )}
 
-                    {/* Due Spaced Repetitions for this subject */}
-                    {subReviews.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-purple-300">
-                          <Brain size={14} />
-                          <span>مراجعات التكرار المتباعد المستحقة:</span>
-                        </div>
-                        {subReviews.map((r) => (
-                          <div
-                            key={r.id}
-                            className="p-3 rounded-2xl bg-purple-950/20 border border-purple-500/30 flex items-center justify-between gap-2"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-xs text-white truncate">{r.topic}</p>
-                              <span className="text-[10px] text-amber-400 font-bold">مستحق المراجعة الآن 🔥</span>
-                            </div>
-                            <button
-                              onClick={() => setReviewModalTopic(r)}
-                              className="px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] transition-colors"
-                            >
-                              مراجعة
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* SECTION 2: EXAMS                                               */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {(categoryFilter === 'all' || categoryFilter === 'exams') && (
+            <div className="space-y-3">
+              {categoryFilter === 'all' && subjectFiltered.exams.filter((e) => e.status !== 'done').length > 0 && (
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2 text-xs font-black text-amber-400">
+                    <Calendar size={16} />
+                    <span>الامتحانات القادمة 🎯</span>
+                  </div>
+                </div>
+              )}
 
-                    {/* Pending Assignments for this subject */}
-                    {subAssignments.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
-                          <CheckSquare size={14} />
-                          <span>الواجبات والتكليفات:</span>
-                        </div>
-                        {subAssignments.map((a) => (
-                          <div
-                            key={a.id}
-                            className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-2"
-                          >
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              <button
-                                onClick={() => handleToggleStatus('assignments', a.id, a.status)}
-                                className="w-5 h-5 rounded-md border-2 border-slate-600 hover:border-emerald-400 flex items-center justify-center text-transparent"
-                              >
-                                <Check size={12} />
-                              </button>
-                              <p className="font-bold text-xs text-slate-200 truncate">{a.title}</p>
-                            </div>
-                            {a.due_date && (
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                {new Date(a.due_date).toLocaleDateString('ar-EG')}
+              {categoryFilter === 'exams' && subjectFiltered.exams.length === 0 ? (
+                <EmptyState
+                  title={currentSubject ? `مفيش امتحانات مسجلة في ${currentSubject.name}` : 'مفيش امتحانات مسجلة'}
+                  subtitle="سجل مواعيد الامتحانات والـ Quizzes عشان ترتب جدولك بدري"
+                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'exams')}
+                />
+              ) : (
+                subjectFiltered.exams.map((item) => {
+                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                  const isDone = item.status === 'done'
+
+                  return (
+                    <div
+                      key={`exam-${item.id}`}
+                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
+                        isDone ? 'opacity-60 bg-slate-900/40' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                          onClick={() => handleToggleStatus('exams', item.id, item.status)}
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                            isDone
+                              ? 'bg-emerald-500 text-white'
+                              : 'border-2 border-slate-600 hover:border-amber-400 text-transparent'
+                          }`}
+                        >
+                          <CheckCircle2 size={16} />
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-sm text-slate-100 truncate ${isDone ? 'line-through' : ''}`}>
+                            {item.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {subject && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                                {subject.icon} {subject.name}
+                              </span>
+                            )}
+                            {item.exam_date && (
+                              <span className="text-[10px] text-amber-400 flex items-center gap-1 font-bold">
+                                <Calendar size={11} />
+                                <span>{new Date(item.exam_date).toLocaleDateString('ar-EG')}</span>
                               </span>
                             )}
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Pending Exams */}
-                    {subExams.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                          <Calendar size={14} />
-                          <span>الامتحانات القادمة:</span>
                         </div>
-                        {subExams.map((e) => (
-                          <div
-                            key={e.id}
-                            className="p-3 rounded-2xl bg-amber-950/20 border border-amber-500/30 flex items-center justify-between gap-2"
+                      </div>
+
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        {item.exam_type || 'اختبار'}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* SECTION 3: ASSIGNMENTS                                         */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {(categoryFilter === 'all' || categoryFilter === 'assignments') && (
+            <div className="space-y-3">
+              {categoryFilter === 'all' && subjectFiltered.assignments.filter((a) => a.status !== 'done').length > 0 && (
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2 text-xs font-black text-emerald-400">
+                    <CheckSquare size={16} />
+                    <span>الواجبات والتكليفات 📝</span>
+                  </div>
+                </div>
+              )}
+
+              {categoryFilter === 'assignments' && subjectFiltered.assignments.length === 0 ? (
+                <EmptyState
+                  title={currentSubject ? `مفيش واجبات في ${currentSubject.name}` : 'مفيش واجبات مسجلة حالياً'}
+                  subtitle="اضغط على زر إضافة جديد عشان تسجل واجب جديد"
+                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'assignments')}
+                />
+              ) : (
+                subjectFiltered.assignments.map((item) => {
+                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                  const isDone = item.status === 'done'
+
+                  return (
+                    <div
+                      key={`assign-${item.id}`}
+                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 transition-all ${
+                        isDone ? 'opacity-60 bg-slate-900/40' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                          onClick={() => handleToggleStatus('assignments', item.id, item.status)}
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                            isDone
+                              ? 'bg-emerald-500 text-white'
+                              : 'border-2 border-slate-600 hover:border-emerald-400 text-transparent'
+                          }`}
+                        >
+                          <CheckCircle2 size={16} />
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`font-bold text-sm text-slate-100 truncate ${
+                              isDone ? 'line-through text-slate-400' : ''
+                            }`}
                           >
-                            <p className="font-bold text-xs text-slate-200 truncate">{e.title}</p>
-                            <span className="text-[10px] text-amber-400 font-bold">
-                              {new Date(e.exam_date).toLocaleDateString('ar-EG')}
+                            {item.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {subject && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                                {subject.icon} {subject.name}
+                              </span>
+                            )}
+                            {item.due_date && (
+                              <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                                <Clock size={11} className="text-amber-400" />
+                                <span>{new Date(item.due_date).toLocaleDateString('ar-EG')}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${
+                          item.priority === 'high'
+                            ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                            : item.priority === 'medium'
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        {item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'عادي'}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* SECTION 4: LECTURES                                            */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {(categoryFilter === 'all' || categoryFilter === 'lectures') && (
+            <div className="space-y-3">
+              {categoryFilter === 'all' && subjectFiltered.lectures.filter((l) => l.status !== 'done').length > 0 && (
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2 text-xs font-black text-cyan-400">
+                    <BookOpen size={16} />
+                    <span>المحاضرات والحصص 📚</span>
+                  </div>
+                </div>
+              )}
+
+              {categoryFilter === 'lectures' && subjectFiltered.lectures.length === 0 ? (
+                <EmptyState
+                  title={currentSubject ? `مفيش محاضرات في ${currentSubject.name}` : 'مفيش محاضرات مسجلة'}
+                  subtitle="سجل مواعيد حصصك والسناتر أو المنصات هنا"
+                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'lectures')}
+                />
+              ) : (
+                subjectFiltered.lectures.map((item) => {
+                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                  const isAttended = item.status === 'done'
+
+                  return (
+                    <div
+                      key={`lec-${item.id}`}
+                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
+                        isAttended ? 'opacity-60 bg-slate-900/40' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                          onClick={() => handleToggleStatus('lectures', item.id, item.status)}
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                            isAttended
+                              ? 'bg-cyan-500 text-white'
+                              : item.status === 'missed'
+                              ? 'bg-rose-500/40 text-rose-300 border-2 border-rose-500'
+                              : 'border-2 border-slate-600 hover:border-cyan-400 text-transparent'
+                          }`}
+                        >
+                          <CheckCircle2 size={16} />
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-sm text-slate-100 truncate ${isAttended ? 'line-through' : ''}`}>
+                            {item.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {subject && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                                {subject.icon} {subject.name}
+                              </span>
+                            )}
+                            {item.date && (
+                              <span className="text-[10px] text-cyan-400 flex items-center gap-1 font-bold">
+                                <Calendar size={11} />
+                                <span>{new Date(item.date).toLocaleDateString('ar-EG')}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                        {isAttended ? 'تم الحضور ✅' : item.status === 'missed' ? 'غائب ❌' : 'قادمة 📅'}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* SECTION 5: BACKLOG                                             */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {(categoryFilter === 'all' || categoryFilter === 'backlog') && (
+            <div className="space-y-3">
+              {categoryFilter === 'all' && subjectFiltered.backlog.filter((b) => b.status !== 'cleared').length > 0 && (
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2 text-xs font-black text-rose-400">
+                    <Clock size={16} />
+                    <span>التراكمات الدراسية ⏳</span>
+                  </div>
+                </div>
+              )}
+
+              {categoryFilter === 'backlog' && subjectFiltered.backlog.length === 0 ? (
+                <EmptyState
+                  title="عاش! مفيش أي تراكمات مسجلة"
+                  subtitle="لو فيه درس متراكم حطه هنا عشان نجدوله في جلسات المذاكرة"
+                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'backlog')}
+                />
+              ) : (
+                subjectFiltered.backlog.map((item) => {
+                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                  const isCleared = item.status === 'cleared'
+
+                  return (
+                    <div
+                      key={`back-${item.id}`}
+                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
+                        isCleared ? 'opacity-60' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                          onClick={() => handleToggleStatus('backlog', item.id, item.status)}
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                            isCleared
+                              ? 'bg-emerald-500 text-white'
+                              : 'border-2 border-slate-600 hover:border-rose-400 text-transparent'
+                          }`}
+                        >
+                          <CheckCircle2 size={16} />
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-sm text-slate-100 truncate ${isCleared ? 'line-through' : ''}`}>
+                            {item.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {subject && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                                {subject.icon} {subject.name}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                              <Clock size={11} className="text-rose-400" />
+                              <span>{`${item.estimated_hours || 1} ساعة تقديرية`}</span>
                             </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Pending Lectures */}
-                    {subLectures.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300">
-                          <BookOpen size={14} />
-                          <span>المحاضرات والحصص:</span>
                         </div>
-                        {subLectures.map((l) => (
-                          <div
-                            key={l.id}
-                            className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-2"
-                          >
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              <button
-                                onClick={() => handleToggleStatus('lectures', l.id, l.status)}
-                                className="w-5 h-5 rounded-md border-2 border-slate-600 hover:border-cyan-400 flex items-center justify-center text-transparent"
-                              >
-                                <Check size={12} />
-                              </button>
-                              <p className="font-bold text-xs text-slate-200 truncate">{l.title}</p>
-                            </div>
-                          </div>
-                        ))}
                       </div>
-                    )}
 
-                    {/* If no items at all for this subject */}
-                    {totalPending === 0 && (
-                      <p className="text-center text-xs text-slate-500 py-3">
-                        كل شيء منجز في هذه المادة! 🎉 اضغط &quot;إضافة&quot; لتسجيل تكليف جديد.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${
+                          isCleared
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                        }`}
+                      >
+                        {isCleared ? 'تم التصفية ✅' : 'متراكم ⚠️'}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* EMPTY OVERALL STATE                                            */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {categoryFilter === 'all' && categoryCounts.all === 0 && (
+            <EmptyState
+              title={currentSubject ? `لا توجد مهام أو مراجعات معلقة في ${currentSubject.name}` : 'لا توجد مهام معلقة إطلاقاً! 🎉'}
+              subtitle="أنت في قمة التميز، اضغط على زر إضافة لتسجيل واجب أو محاضرة جديدة"
+              onAdd={() => openAddModalForSubject(selectedSubjectId || undefined)}
+            />
+          )}
         </div>
       )}
 
