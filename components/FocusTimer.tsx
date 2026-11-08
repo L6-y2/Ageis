@@ -39,6 +39,7 @@ import Link from 'next/link'
 import { SUBJECTS } from '@/lib/types'
 import { useSearchParams } from 'next/navigation'
 import CozyStudyRoom from '@/components/CozyStudyRoom'
+import MinecraftStudyRoom from '@/components/MinecraftStudyRoom'
 import { soundscapeEngine } from '@/lib/soundscapes'
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
@@ -152,8 +153,8 @@ function TimerContent() {
   const subjectParam = searchParams.get('subject')
   const initialSubject = subjectParam ? parseInt(subjectParam) : SUBJECTS[0].id
 
-  // ── View Mode: 'cozy' (Isometric Study Room) or 'dial' (Standard Precision Chronometer) ──
-  const [studioMode, setStudioMode] = useState<'cozy' | 'dial'>('cozy')
+  // ── View Mode: 'minecraft' (4K Rainy Cottage), 'cozy' (Isometric Study Room), or 'dial' (Standard Precision Chronometer) ──
+  const [studioMode, setStudioMode] = useState<'minecraft' | 'cozy' | 'dial'>('minecraft')
   const [showMixer, setShowMixer] = useState(true)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [clockTime, setClockTime] = useState('')
@@ -244,7 +245,7 @@ function TimerContent() {
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem('aegis_focus_studio_mode')
-      if (savedMode === 'cozy' || savedMode === 'dial') {
+      if (savedMode === 'minecraft' || savedMode === 'cozy' || savedMode === 'dial') {
         setStudioMode(savedMode)
       }
     } catch {}
@@ -686,18 +687,36 @@ function TimerContent() {
       {/* Hidden Lo-Fi Stream Audio Element */}
       <audio ref={audioRef} src={currentStation.url} preload="none" />
 
-      {/* ─── Mode Switcher Bar (Cozy Room vs Precision Dial) ──────────────── */}
-      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-[#3f1f33] border border-white/10 shadow-lg px-2 sm:px-3">
-        <div className="flex items-center gap-1.5 sm:gap-2">
+      {/* ─── Mode Switcher Bar (Minecraft vs Cozy vs Precision Dial) ─────── */}
+      <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 shadow-lg px-2 sm:px-3 backdrop-blur-md">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <Link
             href="/"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white text-xs font-bold transition-all border border-white/10 shadow-sm"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold transition-all border border-white/10 shadow-sm"
             title="العودة للصفحة الرئيسية"
           >
             <ArrowRight size={13} />
             <span className="hidden sm:inline">الرئيسية</span>
           </Link>
 
+          {/* 1. Minecraft 4K Rainy Cottage */}
+          <button
+            onClick={() => {
+              setStudioMode('minecraft')
+              try {
+                localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
+              } catch {}
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              studioMode === 'minecraft'
+                ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🌧️ كوخ ماين كرافت 4K</span>
+          </button>
+
+          {/* 2. Isometric Cozy Studio */}
           <button
             onClick={() => {
               setStudioMode('cozy')
@@ -711,9 +730,10 @@ function TimerContent() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>🏡 استوديو اللوفاي والكوزي</span>
+            <span>🏡 استوديو اللوفاي</span>
           </button>
 
+          {/* 3. Precision Dial */}
           <button
             onClick={() => {
               setStudioMode('dial')
@@ -735,7 +755,7 @@ function TimerContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-xl bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white transition-all border border-white/10"
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all border border-white/10"
             title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
           >
             {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -744,9 +764,106 @@ function TimerContent() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 1. COZY LOFI STUDY ROOM (MATCHING USER REFERENCE SCREENSHOT)       */}
+      {/* 1. MINECRAFT 4K RAINY COTTAGE FOCUS ROOM (MATCHING SCREENSHOT 2!)    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {studioMode === 'cozy' ? (
+      {studioMode === 'minecraft' ? (
+        <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
+          <MinecraftStudyRoom
+            running={running}
+            remaining={remaining}
+            totalSeconds={totalSeconds}
+            mode={mode}
+            completedCycles={completedCycles}
+            subject={subject}
+            isFullscreen={isFullscreen}
+            activeSessionId={activeSessionId}
+            sessionLoading={sessionLoading}
+            onToggleRunning={toggleRunning}
+            onReset={handleReset}
+            onSetPreset={setPresetMinutes}
+            onAddFiveMinutes={addFiveMinutes}
+            onCompleteSession={() => completeSession()}
+            onToggleFullscreen={toggleFullscreen}
+            onOpenMixer={() => setShowMixer(!showMixer)}
+          />
+
+          {/* Ambient Sound Mixer Drawer Overlay for Minecraft Mode */}
+          <AnimatePresence>
+            {showMixer && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="absolute top-16 right-4 sm:top-20 sm:right-6 z-40 p-3 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col gap-2.5 w-32 sm:w-36 text-white"
+              >
+                <div className="flex items-center justify-between pb-1 border-b border-white/10">
+                  <span className="text-[10px] font-bold text-emerald-400 font-mono">Sound Mixer</span>
+                  <button onClick={() => setShowMixer(false)} className="text-white/60 hover:text-white text-xs">✕</button>
+                </div>
+                {/* 🌧️ Rain */}
+                <div className="flex items-center gap-2">
+                  <CloudRain size={16} className={ambient.rain > 0 ? 'text-cyan-400' : 'text-white/60'} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={ambient.rain}
+                    onChange={(e) => handleAmbientChange('rain', parseFloat(e.target.value))}
+                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    title="صوت المطر"
+                  />
+                </div>
+                {/* ❄️ Snow / Blizzard */}
+                <div className="flex items-center gap-2">
+                  <Snowflake size={16} className={ambient.brown > 0 ? 'text-blue-300' : 'text-white/60'} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={ambient.brown}
+                    onChange={(e) => handleAmbientChange('brown', parseFloat(e.target.value))}
+                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    title="عاصفة ثلجية"
+                  />
+                </div>
+                {/* 💨 Wind */}
+                <div className="flex items-center gap-2">
+                  <Wind size={16} className={ambient.wind > 0 ? 'text-indigo-300' : 'text-white/60'} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={ambient.wind}
+                    onChange={(e) => handleAmbientChange('wind', parseFloat(e.target.value))}
+                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    title="الرياح"
+                  />
+                </div>
+                {/* 🔥 Fire */}
+                <div className="flex items-center gap-2">
+                  <Flame size={16} className={ambient.fire > 0 ? 'text-amber-400' : 'text-white/60'} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={ambient.fire}
+                    onChange={(e) => handleAmbientChange('fire', parseFloat(e.target.value))}
+                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    title="حطب المدفأة"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ) : studioMode === 'cozy' ? (
+        /* ═══════════════════════════════════════════════════════════════════ */
+        /* 2. COZY LOFI STUDY ROOM (MATCHING USER REFERENCE SCREENSHOT 1)      */
+        /* ═══════════════════════════════════════════════════════════════════ */
         <div
           className={`relative w-full bg-[#572c47] text-white flex flex-col justify-between select-none transition-all duration-300 ${
             isFullscreen

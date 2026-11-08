@@ -2,7 +2,7 @@ import FocusTimer from '@/components/FocusTimer'
 
 export default function FocusPage() {
   return (
-    <main className="w-full min-h-screen bg-[#572c47] text-white overflow-x-hidden flex flex-col justify-between p-1.5 sm:p-4">
+    <main className="w-full min-h-screen bg-black text-white overflow-hidden flex flex-col justify-between p-1 sm:p-2.5">
       <FocusTimer />
     </main>
   )
