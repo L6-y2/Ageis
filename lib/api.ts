@@ -355,8 +355,9 @@ export async function cancelStudySession(sessionId?: number) {
 // ─── Record Completed Study Session & Award XP (Legacy Fallback) ────────────
 export async function recordStudySession(subjectId: number, durationMinutes: number, topicId?: number) {
   try {
+    const validSubjectId = [6, 7, 8, 9].includes(Number(subjectId)) ? Number(subjectId) : 6
     // Start and immediately end to trigger full XP, streak, and hours calculation
-    const startRes = await startStudySession(subjectId, 'جلسة بومودورو مكتملة', 'high', topicId, 'topic')
+    const startRes = await startStudySession(validSubjectId, 'جلسة بومودورو مكتملة', 'high', topicId, 'topic')
     const sessionId = startRes?.session_id || startRes?.session?.id
     if (sessionId) {
       return await endStudySession(sessionId, 'تمت بنجاح')
@@ -369,11 +370,11 @@ export async function recordStudySession(subjectId: number, durationMinutes: num
         Prefer: 'return=representation',
       },
       body: JSON.stringify({
-        subject_id: subjectId,
-        topic_id: topicId || null,
+        subject_id: validSubjectId,
         duration_minutes: durationMinutes,
         status: 'completed',
-        ended_at: new Date().toISOString(),
+        start_time: new Date(Date.now() - durationMinutes * 60000).toISOString(),
+        end_time: new Date().toISOString(),
       }),
     })
     return res.json()

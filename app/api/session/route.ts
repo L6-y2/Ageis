@@ -67,9 +67,9 @@ export async function POST(req: NextRequest) {
         data = await endStudySession(targetSessionId, notes, energyLevel)
       } else {
         // Fallback: create & complete session directly with XP award
-        const fallbackSubject = subjectId ? Number(subjectId) : 1
+        const validSubjectId = [6, 7, 8, 9].includes(Number(subjectId)) ? Number(subjectId) : 6
         const fallbackMins = durationMinutes ? Number(durationMinutes) : 25
-        data = await recordStudySession(fallbackSubject, fallbackMins, topicId ? Number(topicId) : undefined)
+        data = await recordStudySession(validSubjectId, fallbackMins, topicId ? Number(topicId) : undefined)
       }
 
       const xpEarned = data?.xp_earned || data?.xpEarned || Math.max(10, Math.round(((durationMinutes || 25)) * 1.5))
