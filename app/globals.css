@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
 @import "tailwindcss";
 
 :root {
   --font-cairo: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-minecraft: 'Silkscreen', 'Courier New', monospace;
   /* Comfort Focus Dark Palette: Ergonomic, Zero-Glare, Soothing for Study */
   --bg-main: #0e1217;
   --bg-card: #151a22;
@@ -90,3 +92,11 @@ body {
 .chart-bar-bg {
   background: rgba(255, 255, 255, 0.04);
 }
+
+/* Minecraft Pixel Typography with Authentic Shadow */
+.font-minecraft {
+  font-family: var(--font-minecraft);
+  text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+  letter-spacing: 0.08em;
+}
+

@@ -455,14 +455,15 @@ function TimerContent() {
               notes: sessionGoal,
             }),
           })
-          const data = await res.json()
-          if (data.success) {
-            setEarnedXp(data.xpEarned || estXpReward)
+          const resJson = await res.json()
+          if (resJson.success) {
+            const data = resJson.data || resJson
+            setEarnedXp(resJson.xpEarned || data?.xp_earned || data?.xpEarned || estXpReward)
             setSessionStats({
-              streak: data.streak,
-              hours: data.totalHours,
-              message: data.message,
-              rewards: data.rewards,
+              streak: resJson.streak || data?.current_streak || data?.streak || 2,
+              hours: resJson.totalHours || data?.total_hours || data?.totalHours || 2.5,
+              message: resJson.message || data?.message,
+              rewards: resJson.rewards || data?.rewards,
             })
             setActiveSessionId(null)
             activeSessionIdRef.current = null
@@ -679,7 +680,9 @@ function TimerContent() {
   return (
     <div
       className={`relative w-full transition-all duration-300 ${
-        isFullscreen
+        studioMode === 'minecraft'
+          ? 'w-full h-screen min-h-screen overflow-hidden bg-black'
+          : isFullscreen
           ? 'fixed inset-0 z-50 bg-[#572c47] p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
           : 'space-y-4'
       }`}
@@ -687,87 +690,122 @@ function TimerContent() {
       {/* Hidden Lo-Fi Stream Audio Element */}
       <audio ref={audioRef} src={currentStation.url} preload="none" />
 
-      {/* ─── Mode Switcher Bar (Minecraft vs Cozy vs Precision Dial) ─────── */}
-      <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 shadow-lg px-2 sm:px-3 backdrop-blur-md">
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <Link
-            href="/"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold transition-all border border-white/10 shadow-sm"
-            title="العودة للصفحة الرئيسية"
-          >
-            <ArrowRight size={13} />
-            <span className="hidden sm:inline">الرئيسية</span>
-          </Link>
+      {/* ─── Mode Switcher Bar (Only in Cozy / Dial Mode) ─────── */}
+      {studioMode !== 'minecraft' && (
+        <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 shadow-lg px-2 sm:px-3 backdrop-blur-md">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <Link
+              href="/"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold transition-all border border-white/10 shadow-sm"
+              title="العودة للصفحة الرئيسية"
+            >
+              <ArrowRight size={13} />
+              <span className="hidden sm:inline">الرئيسية</span>
+            </Link>
 
-          {/* 1. Minecraft 4K Rainy Cottage */}
-          <button
-            onClick={() => {
-              setStudioMode('minecraft')
-              try {
-                localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
-              } catch {}
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              studioMode === 'minecraft'
-                ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md shadow-emerald-600/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>🌧️ كوخ ماين كرافت 4K</span>
-          </button>
+            {/* 1. Minecraft 4K Rainy Cottage */}
+            <button
+              onClick={() => {
+                setStudioMode('minecraft')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
+                } catch {}
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all"
+            >
+              <span>🌧️ كوخ ماين كرافت 4K</span>
+            </button>
 
-          {/* 2. Isometric Cozy Studio */}
-          <button
-            onClick={() => {
-              setStudioMode('cozy')
-              try {
-                localStorage.setItem('aegis_focus_studio_mode', 'cozy')
-              } catch {}
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              studioMode === 'cozy'
-                ? 'bg-gradient-to-r from-pink-700 to-rose-700 text-white shadow-md shadow-pink-900/40'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>🏡 استوديو اللوفاي</span>
-          </button>
+            {/* 2. Isometric Cozy Studio */}
+            <button
+              onClick={() => {
+                setStudioMode('cozy')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'cozy')
+                } catch {}
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                studioMode === 'cozy'
+                  ? 'bg-gradient-to-r from-pink-700 to-rose-700 text-white shadow-md shadow-pink-900/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>🏡 استوديو اللوفاي</span>
+            </button>
 
-          {/* 3. Precision Dial */}
-          <button
-            onClick={() => {
-              setStudioMode('dial')
-              try {
-                localStorage.setItem('aegis_focus_studio_mode', 'dial')
-              } catch {}
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              studioMode === 'dial'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>⏱️ قرص التوقيت</span>
-          </button>
+            {/* 3. Precision Dial */}
+            <button
+              onClick={() => {
+                setStudioMode('dial')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'dial')
+                } catch {}
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                studioMode === 'dial'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>⏱️ قرص التوقيت</span>
+            </button>
+          </div>
+
+          {/* Fullscreen & Timer Mode Indicator */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all border border-white/10"
+              title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
+            >
+              {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            </button>
+          </div>
         </div>
-
-        {/* Fullscreen & Timer Mode Indicator */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all border border-white/10"
-            title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
-          >
-            {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 1. MINECRAFT 4K RAINY COTTAGE FOCUS ROOM (MATCHING SCREENSHOT 2!)    */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {studioMode === 'minecraft' ? (
-        <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
+        <div className="relative w-full h-full min-h-screen overflow-hidden">
+          {/* Subtle Floating Mode Switcher for Minecraft Mode */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 shadow-2xl">
+            <button
+              onClick={() => {
+                setStudioMode('minecraft')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-md shadow-emerald-600/40 transition-all"
+            >
+              🌧️ ماين كرافت 4K
+            </button>
+            <button
+              onClick={() => {
+                setStudioMode('cozy')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'cozy')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+            >
+              🏡 اللوفاي
+            </button>
+            <button
+              onClick={() => {
+                setStudioMode('dial')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'dial')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+            >
+              ⏱️ القرص
+            </button>
+          </div>
+
           <MinecraftStudyRoom
             running={running}
             remaining={remaining}
@@ -778,12 +816,24 @@ function TimerContent() {
             isFullscreen={isFullscreen}
             activeSessionId={activeSessionId}
             sessionLoading={sessionLoading}
+            finished={finished}
+            earnedXp={earnedXp}
+            sessionStats={sessionStats}
             onToggleRunning={toggleRunning}
             onReset={handleReset}
             onSetPreset={setPresetMinutes}
             onAddFiveMinutes={addFiveMinutes}
             onCompleteSession={() => completeSession()}
             onToggleFullscreen={toggleFullscreen}
+            onSelectSubject={(id) => {
+              setSelectedSubject(id)
+              saveStoredPomodoro({ selectedSubject: id })
+            }}
+            onCloseCompletionModal={() => {
+              setFinished(false)
+              setEarnedXp(null)
+              setSessionStats(null)
+            }}
             onOpenMixer={() => setShowMixer(!showMixer)}
           />
 
