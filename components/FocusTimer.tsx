@@ -33,7 +33,9 @@ import {
   Volume1,
   Shuffle,
   Snowflake,
+  ArrowRight,
 } from 'lucide-react'
+import Link from 'next/link'
 import { SUBJECTS } from '@/lib/types'
 import { useSearchParams } from 'next/navigation'
 import CozyStudyRoom from '@/components/CozyStudyRoom'
@@ -685,8 +687,17 @@ function TimerContent() {
       <audio ref={audioRef} src={currentStation.url} preload="none" />
 
       {/* ─── Mode Switcher Bar (Cozy Room vs Precision Dial) ──────────────── */}
-      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-[#3f1f33] border border-white/10 shadow-lg">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-[#3f1f33] border border-white/10 shadow-lg px-2 sm:px-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Link
+            href="/"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white text-xs font-bold transition-all border border-white/10 shadow-sm"
+            title="العودة للصفحة الرئيسية"
+          >
+            <ArrowRight size={13} />
+            <span className="hidden sm:inline">الرئيسية</span>
+          </Link>
+
           <button
             onClick={() => {
               setStudioMode('cozy')
@@ -740,7 +751,7 @@ function TimerContent() {
           className={`relative w-full bg-[#572c47] text-white flex flex-col justify-between select-none transition-all duration-300 ${
             isFullscreen
               ? 'fixed inset-0 z-50 w-screen h-screen p-4 sm:p-8 rounded-none border-none overflow-hidden'
-              : 'rounded-3xl border border-pink-900/30 shadow-2xl p-3 sm:p-6 min-h-[560px] sm:min-h-[660px] md:min-h-[740px] overflow-hidden'
+              : 'rounded-3xl border border-pink-900/30 shadow-2xl p-2 sm:p-6 min-h-[calc(100vh-100px)] overflow-hidden'
           }`}
         >
           {/* ─── Top Left: Activity & Timer Status (Matches Reference Screenshot!) ─── */}

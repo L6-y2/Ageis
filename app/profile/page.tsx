@@ -80,7 +80,7 @@ export default async function ProfilePage() {
   ]
 
   return (
-    <main className="min-h-screen pb-28 pt-8 px-4 sm:px-6">
+    <main className="min-h-screen pb-28 pt-8 px-4 sm:px-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <Link

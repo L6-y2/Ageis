@@ -42,7 +42,7 @@ export default async function HomePage() {
   })
 
   return (
-    <main className="min-h-screen pb-28 pt-6 px-4 sm:px-6">
+    <main className="min-h-screen pb-28 pt-6 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* ─── Top Brand Header ──────────────────────────────────────────────── */}
       <HomeHeader
         today={today}

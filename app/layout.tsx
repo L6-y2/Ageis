@@ -40,8 +40,8 @@ export default function RootLayout({
           <div className="ambient-blob-3" />
         </div>
 
-        {/* Responsive Content Shell */}
-        <div className="relative z-10 max-w-xl mx-auto min-h-screen">
+        {/* Responsive Content Shell - Expanded for Desktop and Mobile */}
+        <div className="relative z-10 w-full min-h-screen">
           {children}
         </div>
       </body>
