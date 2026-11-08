@@ -206,18 +206,21 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
 
       {/* Chapters Timeline List */}
       <div className="space-y-4">
-        {subject.chapters.map((chapter) => {
-          const filteredTopics = chapter.topics.filter((t) => {
-            const level = localTopics[t.id]?.mastery_level ?? t.mastery_level
-            const matchesQuery = !searchQuery || t.topic.toLowerCase().includes(searchQuery.toLowerCase())
+        {[...subject.chapters]
+          .sort((a, b) => (a.chapter_num ?? 0) - (b.chapter_num ?? 0))
+          .map((chapter) => {
+            const sortedChapterTopics = [...chapter.topics].sort((a, b) => a.id - b.id)
+            const filteredTopics = sortedChapterTopics.filter((t) => {
+              const level = localTopics[t.id]?.mastery_level ?? t.mastery_level
+              const matchesQuery = !searchQuery || t.topic.toLowerCase().includes(searchQuery.toLowerCase())
 
-            if (!matchesQuery) return false
-            if (activeFilter === 'mastered') return level >= 5
-            if (activeFilter === 'reviewing') return level === 4
-            if (activeFilter === 'read') return level >= 1 && level < 4
-            if (activeFilter === 'not_started') return level === 0
-            return true
-          })
+              if (!matchesQuery) return false
+              if (activeFilter === 'mastered') return level >= 5
+              if (activeFilter === 'reviewing') return level === 4
+              if (activeFilter === 'read') return level >= 1 && level < 4
+              if (activeFilter === 'not_started') return level === 0
+              return true
+            })
 
           if (filteredTopics.length === 0 && (searchQuery || activeFilter !== 'all')) {
             return null

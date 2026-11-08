@@ -138,7 +138,7 @@ export interface SpacedReviewTopic {
 // Subjects configuration
 export const SUBJECTS: Subject[] = [
   { id: 6, name: 'اللغة العربية', icon: '📖', color: 'from-emerald-500 to-teal-600' },
-  { id: 7, name: 'البرمجة', icon: '💻', color: 'from-blue-500 to-indigo-600' },
   { id: 8, name: 'اللغة الإنجليزية', icon: '🌍', color: 'from-purple-500 to-violet-600' },
   { id: 9, name: 'التاريخ', icon: '🏛️', color: 'from-amber-500 to-orange-600' },
+  { id: 7, name: 'البرمجة', icon: '💻', color: 'from-blue-500 to-indigo-600' },
 ]

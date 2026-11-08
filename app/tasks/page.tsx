@@ -465,137 +465,72 @@ export default function TasksPage() {
             )}
           </button>
 
-          {/* 2. ARABIC (اللغة العربية) */}
-          {(() => {
-            const s = SUBJECTS.find((sub) => sub.id === 6)!
-            const isSelected = selectedSubjectId === 6
-            const count = subjectTaskCounts[6]?.total || 0
-            return (
-              <button
-                key={6}
-                onClick={() => setSelectedSubjectId(6)}
-                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
-                  isSelected
-                    ? 'bg-gradient-to-b from-emerald-600/30 to-teal-900/40 border-emerald-500/70 shadow-lg shadow-emerald-600/20 ring-1 ring-emerald-400/40 scale-[1.02]'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
-                }`}
-              >
-                <span className="text-2xl">{s.icon}</span>
-                <span className={`text-xs font-black ${isSelected ? 'text-emerald-300' : 'text-slate-300'}`}>
-                  {s.name}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    isSelected ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {count} معلقة
-                </span>
-                {isSelected && (
-                  <span className="absolute -bottom-1 w-6 h-1 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]" />
-                )}
-              </button>
-            )
-          })()}
+          {/* 2..5. DYNAMIC SUBJECTS (العربية -> الإنجليزية -> التاريخ -> البرمجة) */}
+          {SUBJECTS.map((s) => {
+            const isSelected = selectedSubjectId === s.id
+            const count = subjectTaskCounts[s.id]?.total || 0
 
-          {/* 3. PROGRAMMING (البرمجة) */}
-          {(() => {
-            const s = SUBJECTS.find((sub) => sub.id === 7)!
-            const isSelected = selectedSubjectId === 7
-            const count = subjectTaskCounts[7]?.total || 0
-            return (
-              <button
-                key={7}
-                onClick={() => setSelectedSubjectId(7)}
-                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
-                  isSelected
-                    ? 'bg-gradient-to-b from-blue-600/30 to-indigo-900/40 border-blue-500/70 shadow-lg shadow-blue-600/20 ring-1 ring-blue-400/40 scale-[1.02]'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
-                }`}
-              >
-                <span className="text-2xl">{s.icon}</span>
-                <span className={`text-xs font-black ${isSelected ? 'text-blue-300' : 'text-slate-300'}`}>
-                  {s.name}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    isSelected ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {count} معلقة
-                </span>
-                {isSelected && (
-                  <span className="absolute -bottom-1 w-6 h-1 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
-                )}
-              </button>
-            )
-          })()}
+            const colorTheme: Record<number, { bgActive: string; textActive: string; badgeActive: string; dot: string }> = {
+              6: {
+                bgActive: 'bg-gradient-to-b from-emerald-600/30 to-teal-900/40 border-emerald-500/70 shadow-emerald-600/20 ring-emerald-400/40',
+                textActive: 'text-emerald-300',
+                badgeActive: 'bg-emerald-500 text-slate-950 font-black',
+                dot: 'bg-emerald-500 shadow-[0_0_8px_#10b981]',
+              },
+              8: {
+                bgActive: 'bg-gradient-to-b from-purple-600/30 to-violet-900/40 border-purple-500/70 shadow-purple-600/20 ring-purple-400/40',
+                textActive: 'text-purple-300',
+                badgeActive: 'bg-purple-500 text-white',
+                dot: 'bg-purple-500 shadow-[0_0_8px_#a855f7]',
+              },
+              9: {
+                bgActive: 'bg-gradient-to-b from-amber-600/30 to-orange-900/40 border-amber-500/70 shadow-amber-600/20 ring-amber-400/40',
+                textActive: 'text-amber-300',
+                badgeActive: 'bg-amber-500 text-slate-950 font-black',
+                dot: 'bg-amber-500 shadow-[0_0_8px_#f59e0b]',
+              },
+              7: {
+                bgActive: 'bg-gradient-to-b from-blue-600/30 to-indigo-900/40 border-blue-500/70 shadow-blue-600/20 ring-blue-400/40',
+                textActive: 'text-blue-300',
+                badgeActive: 'bg-blue-500 text-white',
+                dot: 'bg-blue-500 shadow-[0_0_8px_#3b82f6]',
+              },
+            }
 
-          {/* 4. ENGLISH (اللغة الإنجليزية) */}
-          {(() => {
-            const s = SUBJECTS.find((sub) => sub.id === 8)!
-            const isSelected = selectedSubjectId === 8
-            const count = subjectTaskCounts[8]?.total || 0
-            return (
-              <button
-                key={8}
-                onClick={() => setSelectedSubjectId(8)}
-                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
-                  isSelected
-                    ? 'bg-gradient-to-b from-purple-600/30 to-violet-900/40 border-purple-500/70 shadow-lg shadow-purple-600/20 ring-1 ring-purple-400/40 scale-[1.02]'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
-                }`}
-              >
-                <span className="text-2xl">{s.icon}</span>
-                <span className={`text-xs font-black ${isSelected ? 'text-purple-300' : 'text-slate-300'}`}>
-                  {s.name}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    isSelected ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {count} معلقة
-                </span>
-                {isSelected && (
-                  <span className="absolute -bottom-1 w-6 h-1 bg-purple-500 rounded-full shadow-[0_0_8px_#a855f7]" />
-                )}
-              </button>
-            )
-          })()}
+            const theme = colorTheme[s.id] || {
+              bgActive: 'bg-indigo-600/30 border-indigo-500',
+              textActive: 'text-indigo-300',
+              badgeActive: 'bg-indigo-500 text-white',
+              dot: 'bg-indigo-500 shadow-[0_0_8px_#6366f1]',
+            }
 
-          {/* 5. HISTORY (التاريخ) — Prominently placed and 100% visible! */}
-          {(() => {
-            const s = SUBJECTS.find((sub) => sub.id === 9)!
-            const isSelected = selectedSubjectId === 9
-            const count = subjectTaskCounts[9]?.total || 0
             return (
               <button
-                key={9}
-                onClick={() => setSelectedSubjectId(9)}
+                key={s.id}
+                onClick={() => setSelectedSubjectId(s.id)}
                 className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
                   isSelected
-                    ? 'bg-gradient-to-b from-amber-600/30 to-orange-900/40 border-amber-500/70 shadow-lg shadow-amber-600/20 ring-1 ring-amber-400/40 scale-[1.02]'
+                    ? `${theme.bgActive} shadow-lg ring-1 scale-[1.02]`
                     : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
                 }`}
               >
                 <span className="text-2xl">{s.icon}</span>
-                <span className={`text-xs font-black ${isSelected ? 'text-amber-300' : 'text-slate-300'}`}>
+                <span className={`text-xs font-black ${isSelected ? theme.textActive : 'text-slate-300'}`}>
                   {s.name}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    isSelected ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'
+                    isSelected ? theme.badgeActive : 'bg-slate-800 text-slate-400'
                   }`}
                 >
                   {count} معلقة
                 </span>
                 {isSelected && (
-                  <span className="absolute -bottom-1 w-6 h-1 bg-amber-500 rounded-full shadow-[0_0_8px_#f59e0b]" />
+                  <span className={`absolute -bottom-1 w-6 h-1 rounded-full ${theme.dot}`} />
                 )}
               </button>
             )
-          })()}
+          })}
         </div>
       </div>
 

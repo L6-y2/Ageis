@@ -42,6 +42,16 @@ export default async function CurriculumSubjectPage({
 
   const report = await getMasteryReport(id)
   const subjectData = report?.subjects?.[0]
+  if (subjectData?.chapters) {
+    // Sort chapters chronologically / by chapter_num
+    subjectData.chapters.sort((a: any, b: any) => (a.chapter_num ?? 0) - (b.chapter_num ?? 0))
+    // Sort topics inside each chapter by id (canonical textbook order)
+    subjectData.chapters.forEach((c: any) => {
+      if (c.topics) {
+        c.topics.sort((a: any, b: any) => a.id - b.id)
+      }
+    })
+  }
   const pct = Math.round(subjectData?.mastery_pct ?? 0)
 
   return (
