@@ -21,21 +21,20 @@ export default function FocusPage() {
         </div>
       </div>
 
-      <div className="space-y-6 max-w-xl mx-auto">
+      <div className="space-y-6 max-w-3xl mx-auto">
         {/* Title & Description */}
         <div className="text-center space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            غرفة التركيز والإنتاجية
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center justify-center gap-2">
+            <span>استوديو التركيز واللوفاي</span>
+            <span className="text-xl">☕</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
-            اضبط الوقت، عيّن هدف جلستك، وعِش تركيزاً تاماً بدون أي مشتتات
+            مساحة كوزي هادئة للمذاكرة مع أصوات المطر والمدفأة وموسيقى اللوفاي
           </p>
         </div>
 
-        {/* ─── Main Instrument Chronometer Panel ───────────────────────────── */}
-        <div className="panel p-5 sm:p-8 relative overflow-hidden border border-slate-800 shadow-2xl">
-          <FocusTimer />
-        </div>
+        {/* ─── Main Instrument Chronometer & Cozy Studio Panel ────────────── */}
+        <FocusTimer />
 
         {/* ─── Productivity Tips & XP Guidelines ───────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
