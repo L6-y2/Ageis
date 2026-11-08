@@ -31,6 +31,8 @@ import {
   SkipForward,
   SkipBack,
   Volume1,
+  Shuffle,
+  Snowflake,
 } from 'lucide-react'
 import { SUBJECTS } from '@/lib/types'
 import { useSearchParams } from 'next/navigation'
@@ -666,7 +668,7 @@ function TimerContent() {
     <div
       className={`relative w-full transition-all duration-300 ${
         isFullscreen
-          ? 'fixed inset-0 z-50 bg-[#1b1022] p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
+          ? 'fixed inset-0 z-50 bg-[#572c47] p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
           : 'space-y-4'
       }`}
     >
@@ -674,7 +676,7 @@ function TimerContent() {
       <audio ref={audioRef} src={currentStation.url} preload="none" />
 
       {/* ─── Mode Switcher Bar (Cozy Room vs Precision Dial) ──────────────── */}
-      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-[#23122b] border border-white/10 shadow-lg">
+      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-[#3f1f33] border border-white/10 shadow-lg">
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => {
@@ -685,7 +687,7 @@ function TimerContent() {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               studioMode === 'cozy'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-600/30'
+                ? 'bg-gradient-to-r from-pink-700 to-rose-700 text-white shadow-md shadow-pink-900/40'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -713,7 +715,7 @@ function TimerContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-white/10"
+            className="p-2 rounded-xl bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white transition-all border border-white/10"
             title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
           >
             {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -725,166 +727,145 @@ function TimerContent() {
       {/* 1. COZY LOFI STUDY ROOM (MATCHING USER REFERENCE SCREENSHOT)       */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {studioMode === 'cozy' ? (
-        <div className="relative w-full rounded-3xl bg-[#281530] border border-purple-900/40 shadow-2xl overflow-hidden p-4 sm:p-7 text-white">
-          {/* ─── Top Left: Activity & Timer Status ────────────────────────── */}
+        <div className="relative w-full rounded-3xl bg-[#572c47] border border-pink-900/30 shadow-2xl overflow-hidden p-3 sm:p-6 text-white">
+          {/* ─── Top Left: Activity & Timer Status (Matches Reference Screenshot!) ─── */}
           <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-30 flex flex-col gap-1.5 text-left" dir="ltr">
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleRunning}
-                className="w-7 h-7 rounded-lg bg-black/40 hover:bg-black/60 border border-white/15 flex items-center justify-center text-white transition-all active:scale-95 shadow-sm"
+                className="w-7 h-7 rounded-lg bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white transition-all active:scale-95 shadow-sm"
+                title={running ? 'إيقاف مؤقت' : 'بدء التركيز'}
               >
                 {running ? <Pause size={13} /> : <Play size={13} className="translate-x-0.5" />}
               </button>
-              <div className="flex items-center gap-1 text-xs font-bold text-slate-200">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-white/90">
                 <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
-                <span>{mode === 'focus' ? 'Activity: Deep Focus' : 'Break: Rest Time'}</span>
+                <span>{mode === 'focus' ? 'Activity' : 'Break'}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-slate-300 pl-1">
-              <span className="text-pink-400">🔁</span>
-              <span className="text-sm font-black text-white">{`${mm}:${ss}`}</span>
-              <span className="text-[11px] text-slate-400">{running ? 'running' : 'paused'}</span>
+            <div className="flex items-center gap-2 text-xs font-mono font-bold text-white/90 pl-1">
+              <span className="text-pink-300 text-sm">🔁</span>
+              <span className="text-sm font-black text-white tracking-wide">{`${mm}:${ss}`}</span>
+              <span className="text-[11px] text-white/60">
+                {running ? `${Math.ceil(remaining / 60)} min to go` : 'paused'}
+              </span>
             </div>
 
             {/* Current Active Subject Tag */}
-            <div className="pt-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/40 border border-white/10 text-[11px] font-bold text-slate-300">
+            <div className="pt-0.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/15 text-[11px] font-bold text-white/80">
                 <span>{subject.icon}</span>
                 <span>{subject.name}</span>
               </span>
             </div>
           </div>
 
-          {/* ─── Top Right: Clock & Side Mixer Toggle ─────────────────────── */}
+          {/* ─── Top Right: Clock, Quick Buttons & Sound Mixer Panel (Matches Screenshot!) ─── */}
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex flex-col items-end gap-2.5">
-            {/* Digital Clock (HH:MM AM/PM) */}
-            <div className="px-3.5 py-1.5 rounded-xl bg-black/50 border border-white/15 font-mono text-xs sm:text-sm font-black text-white tracking-wider shadow-lg">
-              {clockTime || '15:11 PM'}
+            {/* Digital Clock (HH:MM | AM/PM) Capsule */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-white/20 font-mono text-xs sm:text-sm font-bold text-white shadow-lg backdrop-blur-md select-none">
+              <span>{clockTime.split(' ')[0] || '15:11'}</span>
+              <span className="text-white/30 text-xs">|</span>
+              <span className="text-[10px] sm:text-xs text-white/70">{clockTime.split(' ')[1] || 'PM'}</span>
             </div>
 
-            {/* Quick Actions (Goal, Fullscreen, Mixer Toggle) */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
+            {/* Quick Actions (Goal/Tasks, Fullscreen) */}
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setShowGoalModal(true)}
-                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95"
                 title="تحديد هدف الجلسة"
               >
                 <ListTodo size={15} />
               </button>
               <button
                 onClick={toggleFullscreen}
-                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-                title="ملء الشاشة"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95"
+                title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
               >
-                <Maximize2 size={15} />
-              </button>
-              <button
-                onClick={() => setShowMixer(!showMixer)}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  showMixer ? 'bg-pink-600 text-white' : 'text-slate-300 hover:text-white hover:bg-white/10'
-                }`}
-                title="مكسر الأصوات المحيطية"
-              >
-                <Sliders size={15} />
+                {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               </button>
             </div>
 
             {/* ─── Ambient Sound Mixer Vertical Panel (From Screenshot!) ──── */}
-            <AnimatePresence>
-              {showMixer && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="p-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 shadow-2xl flex flex-col gap-3.5 w-24 sm:w-28 text-center"
-                >
-                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
-                    Sound Mixer
-                  </span>
+            <div className="p-2.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col gap-2.5 w-28 sm:w-32">
+              {/* 🌧️ Row 1: Rain */}
+              <div className="flex items-center gap-2 px-1">
+                <CloudRain
+                  size={16}
+                  className={`shrink-0 ${ambient.rain > 0 ? 'text-cyan-400' : 'text-white/60'}`}
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={ambient.rain}
+                  onChange={(e) => handleAmbientChange('rain', parseFloat(e.target.value))}
+                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  title="صوت المطر"
+                />
+              </div>
 
-                  {/* 🌧️ Rain Slider */}
-                  <div className="flex flex-col items-center gap-1">
-                    <CloudRain
-                      size={18}
-                      className={ambient.rain > 0 ? 'text-cyan-400 animate-pulse' : 'text-slate-400'}
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={ambient.rain}
-                      onChange={(e) => handleAmbientChange('rain', parseFloat(e.target.value))}
-                      className="w-16 accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                      title="صوت المطر"
-                    />
-                    <span className="text-[9px] font-mono text-slate-400">{Math.round(ambient.rain * 100)}%</span>
-                  </div>
+              {/* ❄️ Row 2: Snow / Cold Blizzard Noise */}
+              <div className="flex items-center gap-2 px-1">
+                <Snowflake
+                  size={16}
+                  className={`shrink-0 ${ambient.brown > 0 ? 'text-blue-300' : 'text-white/60'}`}
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={ambient.brown}
+                  onChange={(e) => handleAmbientChange('brown', parseFloat(e.target.value))}
+                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  title="عاصفة ثلجية وهدوء تام"
+                />
+              </div>
 
-                  {/* 🔥 Fireplace Slider */}
-                  <div className="flex flex-col items-center gap-1">
-                    <Flame
-                      size={18}
-                      className={ambient.fire > 0 ? 'text-amber-400 animate-pulse' : 'text-slate-400'}
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={ambient.fire}
-                      onChange={(e) => handleAmbientChange('fire', parseFloat(e.target.value))}
-                      className="w-16 accent-amber-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                      title="حطب المدفأة"
-                    />
-                    <span className="text-[9px] font-mono text-slate-400">{Math.round(ambient.fire * 100)}%</span>
-                  </div>
+              {/* 💨 Row 3: Wind */}
+              <div className="flex items-center gap-2 px-1">
+                <Wind
+                  size={16}
+                  className={`shrink-0 ${ambient.wind > 0 ? 'text-indigo-300' : 'text-white/60'}`}
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={ambient.wind}
+                  onChange={(e) => handleAmbientChange('wind', parseFloat(e.target.value))}
+                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  title="نسيم الرياح"
+                />
+              </div>
 
-                  {/* 💨 Wind Slider */}
-                  <div className="flex flex-col items-center gap-1">
-                    <Wind
-                      size={18}
-                      className={ambient.wind > 0 ? 'text-indigo-400 animate-pulse' : 'text-slate-400'}
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={ambient.wind}
-                      onChange={(e) => handleAmbientChange('wind', parseFloat(e.target.value))}
-                      className="w-16 accent-indigo-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                      title="نسيم الرياح"
-                    />
-                    <span className="text-[9px] font-mono text-slate-400">{Math.round(ambient.wind * 100)}%</span>
-                  </div>
-
-                  {/* 🧠 Deep Focus Brown Noise */}
-                  <div className="flex flex-col items-center gap-1">
-                    <Brain
-                      size={18}
-                      className={ambient.brown > 0 ? 'text-pink-400 animate-pulse' : 'text-slate-400'}
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={ambient.brown}
-                      onChange={(e) => handleAmbientChange('brown', parseFloat(e.target.value))}
-                      className="w-16 accent-pink-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                      title="ضوضاء بنية للتركيز"
-                    />
-                    <span className="text-[9px] font-mono text-slate-400">{Math.round(ambient.brown * 100)}%</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              {/* 🔥 Row 4: Fire */}
+              <div className="flex items-center gap-2 px-1">
+                <Flame
+                  size={16}
+                  className={`shrink-0 ${ambient.fire > 0 ? 'text-amber-400' : 'text-white/60'}`}
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={ambient.fire}
+                  onChange={(e) => handleAmbientChange('fire', parseFloat(e.target.value))}
+                  className="w-full accent-white cursor-pointer h-1.5 bg-white/20 rounded-full"
+                  title="حطب المدفأة"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* ─── Centerpiece: Isometric Cozy Study Cabin ─────────────────── */}
-          <div className="py-6 sm:py-8 my-auto relative z-10">
+          {/* ─── Centerpiece: The Real 3D Isometric Cozy Study Cabin Artwork ─── */}
+          <div className="py-1 my-auto relative z-10 w-full flex items-center justify-center">
             <CozyStudyRoom
               isFocusing={running && mode === 'focus'}
               isBreak={mode !== 'focus'}
@@ -902,7 +883,7 @@ function TimerContent() {
                   initial={{ opacity: 0, y: 10, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute bottom-20 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-pink-950/80 border border-pink-500/50 text-xs font-bold text-pink-300 shadow-xl"
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-pink-950/90 border border-pink-500/50 text-xs font-bold text-pink-200 shadow-2xl backdrop-blur-md z-30"
                 >
                   🐱 مياو! القطة تشعر بالدفء وممتنة لمذاكرتك المركزة ❤️
                 </motion.div>
@@ -910,37 +891,28 @@ function TimerContent() {
             </AnimatePresence>
           </div>
 
-          {/* ─── Bottom Center: Lo-Fi Music Player Bar (From Screenshot) ─── */}
-          <div className="relative z-20 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10">
-            {/* Lofi Stream Controls */}
-            <div className="flex items-center gap-3 bg-black/40 px-4 py-2 rounded-2xl border border-white/10" dir="ltr">
-              <button
-                onClick={() => changeLofiStation(-1)}
-                className="text-slate-400 hover:text-white transition-colors"
-                title="المحطة السابقة"
-              >
-                <SkipBack size={15} />
-              </button>
+          {/* ─── Bottom Center: Lo-Fi Music Player Bar (Matches Reference Screenshot!) ─── */}
+          <div className="relative z-20 flex flex-col items-center justify-center gap-3 pt-4 border-t border-white/10">
+            {/* Centered Lofi Player (Play/Pause, Shuffle, Volume, Track Name) */}
+            <div className="flex flex-col items-center gap-1.5" dir="ltr">
+              <div className="flex items-center gap-3 bg-black/40 px-3.5 py-1.5 rounded-full border border-white/20 shadow-lg backdrop-blur-md">
+                <button
+                  onClick={toggleLofi}
+                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-transform active:scale-90"
+                  title={lofiPlaying ? 'إيقاف مؤقت' : 'تشغيل اللوفاي'}
+                >
+                  {lofiPlaying ? <Pause size={14} /> : <Play size={14} className="translate-x-0.5" />}
+                </button>
 
-              <button
-                onClick={toggleLofi}
-                className="w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center transition-transform active:scale-90 shadow-md shadow-pink-600/30"
-                title={lofiPlaying ? 'إيقاف مؤقت' : 'تشغيل اللوفاي'}
-              >
-                {lofiPlaying ? <Pause size={15} /> : <Play size={15} className="translate-x-0.5" />}
-              </button>
+                <button
+                  onClick={() => changeLofiStation(1)}
+                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-transform active:scale-90"
+                  title="المحطة التالية"
+                >
+                  <Shuffle size={14} />
+                </button>
 
-              <button
-                onClick={() => changeLofiStation(1)}
-                className="text-slate-400 hover:text-white transition-colors"
-                title="المحطة التالية"
-              >
-                <SkipForward size={15} />
-              </button>
-
-              {/* Volume Slider */}
-              <div className="flex items-center gap-1.5 pl-1">
-                <Volume1 size={13} className="text-slate-400" />
+                {/* Volume Slider matching reference screenshot thumb style */}
                 <input
                   type="range"
                   min="0"
@@ -948,21 +920,21 @@ function TimerContent() {
                   step="0.05"
                   value={lofiVolume}
                   onChange={(e) => setLofiVolume(parseFloat(e.target.value))}
-                  className="w-14 accent-pink-500 h-1 bg-slate-800 rounded-lg cursor-pointer"
+                  className="w-20 accent-white h-1.5 bg-white/25 rounded-full cursor-pointer"
+                  title="مستوى الصوت"
                 />
               </div>
 
-              {/* Now Playing Info */}
-              <div className="flex items-center gap-1.5 pl-2 border-l border-white/10 text-xs font-mono font-bold text-slate-200">
-                <Radio size={13} className={lofiPlaying ? 'text-pink-400 animate-pulse' : 'text-slate-500'} />
-                <span>{currentStation.name}</span>
-              </div>
+              {/* Track Title / Artist */}
+              <p className="text-[11px] font-mono font-medium text-white/70 tracking-wide select-none">
+                {currentStation.name}
+              </p>
             </div>
 
-            {/* Quick Action Buttons (Presets & Complete) */}
+            {/* Quick Action Buttons (Presets, Reset & Complete Session XP) */}
             <div className="flex items-center gap-2 flex-wrap justify-center">
               {/* Presets */}
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/10">
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/15">
                 {[25, 45, 60].map((m) => (
                   <button
                     key={m}
@@ -976,12 +948,19 @@ function TimerContent() {
                     {`${m}د`}
                   </button>
                 ))}
+                <button
+                  onClick={addFiveMinutes}
+                  className="px-2 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                  title="إضافة 5 دقائق"
+                >
+                  +5د
+                </button>
               </div>
 
               {/* Reset */}
               <button
                 onClick={handleReset}
-                className="p-2 rounded-xl bg-black/40 hover:bg-black/60 border border-white/10 text-slate-300 hover:text-white transition-all"
+                className="p-2 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-slate-300 hover:text-white transition-all"
                 title="إعادة ضبط المؤقت"
               >
                 <RotateCcw size={15} />

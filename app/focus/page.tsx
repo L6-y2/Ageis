@@ -21,7 +21,7 @@ export default function FocusPage() {
         </div>
       </div>
 
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto">
         {/* Title & Description */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center justify-center gap-2">
