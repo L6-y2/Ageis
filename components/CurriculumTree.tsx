@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
@@ -18,8 +18,10 @@ import {
   Loader2,
   Bookmark,
   FileText,
+  Layers,
 } from 'lucide-react'
 import type { RpcMasteryReport, ChapterData, TopicData } from '@/lib/types'
+import ConstellationTree from '@/components/ConstellationTree'
 
 interface Props {
   report: RpcMasteryReport
@@ -30,12 +32,30 @@ type FilterStatus = 'all' | 'mastered' | 'reviewing' | 'read' | 'not_started'
 
 export default function CurriculumTree({ report, subjectColor }: Props) {
   const subject = report?.subjects?.[0]
+  const [viewMode, setViewMode] = useState<'list' | 'constellation'>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all')
   const [selectedTopic, setSelectedTopic] = useState<TopicData | null>(null)
   const [activeModalTab, setActiveModalTab] = useState<'stages' | 'sm2'>('stages')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [localTopics, setLocalTopics] = useState<Record<number, Partial<TopicData>>>({})
+
+  // Restore preferred view mode (list or constellation)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('aegis_curriculum_view_mode')
+      if (saved === 'list' || saved === 'constellation') {
+        setViewMode(saved)
+      }
+    } catch {}
+  }, [])
+
+  const handleToggleViewMode = (mode: 'list' | 'constellation') => {
+    setViewMode(mode)
+    try {
+      localStorage.setItem('aegis_curriculum_view_mode', mode)
+    } catch {}
+  }
 
   // Flattened topics for counters
   const allTopics = useMemo(() => {
@@ -78,6 +98,19 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
       })
       const data = await res.json()
       if (data.success) {
+        // Trigger celebratory confetti on reaching full mastery (Level 5)
+        if (level === 5) {
+          try {
+            const confetti = (await import('canvas-confetti')).default
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#facc15', '#38bdf8', '#a855f7', '#10b981'],
+            })
+          } catch {}
+        }
+
         setLocalTopics((prev) => ({
           ...prev,
           [topicId]: {
@@ -104,6 +137,18 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
       })
       const data = await res.json()
       if (data.success && data.data) {
+        if (grade >= 4) {
+          try {
+            const confetti = (await import('canvas-confetti')).default
+            confetti({
+              particleCount: 90,
+              spread: 60,
+              origin: { y: 0.6 },
+              colors: ['#facc15', '#38bdf8', '#10b981'],
+            })
+          } catch {}
+        }
+
         setLocalTopics((prev) => ({
           ...prev,
           [topicId]: {
@@ -122,7 +167,47 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Search & Filter Bar */}
+      {/* ─── View Switcher Segmented Bar ─────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleToggleViewMode('list')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              viewMode === 'list'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Layers size={13} />
+            <span>قائمة الفصول</span>
+          </button>
+
+          <button
+            onClick={() => handleToggleViewMode('constellation')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              viewMode === 'constellation'
+                ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white shadow-lg shadow-indigo-600/30 ring-1 ring-white/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Sparkles size={13} className="text-amber-300 animate-pulse" />
+            <span>كوكبة النجوم 🌌</span>
+          </button>
+        </div>
+
+        <div className="text-[11px] font-bold text-slate-400 px-2 flex items-center gap-1.5">
+          {viewMode === 'constellation' ? (
+            <span className="text-indigo-300 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span>خريطة المنهج الفلكية</span>
+            </span>
+          ) : (
+            <span className="text-slate-400">التسلسل المنهجي الزمني</span>
+          )}
+        </div>
+      </div>
+
+      {/* ─── Search & Status Filters ──────────────────────────────────── */}
       <div className="space-y-3">
         {/* Search Input */}
         <div className="relative">
@@ -131,7 +216,7 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن أي درس أو مفهوم بالاسم..."
+            placeholder="ابحث عن أي درس أو مفهوم في الكوكبة..."
             className="w-full bg-[#111624] border border-slate-800 rounded-2xl pr-10 pl-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500/80 transition-all"
             dir="auto"
           />
@@ -204,40 +289,52 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
         </div>
       </div>
 
-      {/* Chapters Timeline List */}
-      <div className="space-y-4">
-        {[...subject.chapters]
-          .sort((a, b) => (a.chapter_num ?? 0) - (b.chapter_num ?? 0))
-          .map((chapter) => {
-            const sortedChapterTopics = [...chapter.topics].sort((a, b) => a.id - b.id)
-            const filteredTopics = sortedChapterTopics.filter((t) => {
-              const level = localTopics[t.id]?.mastery_level ?? t.mastery_level
-              const matchesQuery = !searchQuery || t.topic.toLowerCase().includes(searchQuery.toLowerCase())
+      {/* ─── Constellation View Mode ──────────────────────────────────── */}
+      {viewMode === 'constellation' ? (
+        <ConstellationTree
+          subject={subject}
+          subjectColor={subjectColor}
+          localTopics={localTopics}
+          onSelectTopic={(t) => setSelectedTopic(t)}
+          searchQuery={searchQuery}
+          activeFilter={activeFilter}
+        />
+      ) : (
+        /* ─── Standard Timeline Chapters List ────────────────────────── */
+        <div className="space-y-4">
+          {[...subject.chapters]
+            .sort((a, b) => (a.chapter_num ?? 0) - (b.chapter_num ?? 0))
+            .map((chapter) => {
+              const sortedChapterTopics = [...chapter.topics].sort((a, b) => a.id - b.id)
+              const filteredTopics = sortedChapterTopics.filter((t) => {
+                const level = localTopics[t.id]?.mastery_level ?? t.mastery_level
+                const matchesQuery = !searchQuery || t.topic.toLowerCase().includes(searchQuery.toLowerCase())
 
-              if (!matchesQuery) return false
-              if (activeFilter === 'mastered') return level >= 5
-              if (activeFilter === 'reviewing') return level === 4
-              if (activeFilter === 'read') return level >= 1 && level < 4
-              if (activeFilter === 'not_started') return level === 0
-              return true
-            })
+                if (!matchesQuery) return false
+                if (activeFilter === 'mastered') return level >= 5
+                if (activeFilter === 'reviewing') return level === 4
+                if (activeFilter === 'read') return level >= 1 && level < 4
+                if (activeFilter === 'not_started') return level === 0
+                return true
+              })
 
-          if (filteredTopics.length === 0 && (searchQuery || activeFilter !== 'all')) {
-            return null
-          }
+              if (filteredTopics.length === 0 && (searchQuery || activeFilter !== 'all')) {
+                return null
+              }
 
-          return (
-            <ChapterBlock
-              key={chapter.chapter_id}
-              chapter={chapter}
-              topics={filteredTopics}
-              color={subjectColor}
-              localTopics={localTopics}
-              onSelectTopic={(t) => setSelectedTopic(t)}
-            />
-          )
-        })}
-      </div>
+              return (
+                <ChapterBlock
+                  key={chapter.chapter_id}
+                  chapter={chapter}
+                  topics={filteredTopics}
+                  color={subjectColor}
+                  localTopics={localTopics}
+                  onSelectTopic={(t) => setSelectedTopic(t)}
+                />
+              )
+            })}
+        </div>
+      )}
 
       {/* ─── Topic Mastery Stage & SM-2 Modal ──────────────────────────────── */}
       <AnimatePresence>
