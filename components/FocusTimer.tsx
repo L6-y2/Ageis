@@ -40,9 +40,11 @@ import { SUBJECTS } from '@/lib/types'
 import { useSearchParams } from 'next/navigation'
 import CozyStudyRoom from '@/components/CozyStudyRoom'
 import MinecraftStudyRoom from '@/components/MinecraftStudyRoom'
+import SpaceStudyRoom from '@/components/SpaceStudyRoom'
 import { soundscapeEngine } from '@/lib/soundscapes'
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
+type StudioMode = 'space' | 'minecraft' | 'cozy' | 'dial'
 
 const FOCUS_PRESETS = [
   { label: '25 دقيقة', minutes: 25, title: 'بومودورو قياسي' },
@@ -153,8 +155,8 @@ function TimerContent() {
   const subjectParam = searchParams.get('subject')
   const initialSubject = subjectParam ? parseInt(subjectParam) : SUBJECTS[0].id
 
-  // ── View Mode: 'minecraft' (4K Rainy Cottage), 'cozy' (Isometric Study Room), or 'dial' (Standard Precision Chronometer) ──
-  const [studioMode, setStudioMode] = useState<'minecraft' | 'cozy' | 'dial'>('minecraft')
+  // ── View Mode: 'space' (3D Starship Flight), 'minecraft' (4K Rainy Cottage), 'cozy' (Isometric), or 'dial' ──
+  const [studioMode, setStudioMode] = useState<StudioMode>('space')
   const [showMixer, setShowMixer] = useState(true)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [clockTime, setClockTime] = useState('')
@@ -245,8 +247,8 @@ function TimerContent() {
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem('aegis_focus_studio_mode')
-      if (savedMode === 'minecraft' || savedMode === 'cozy' || savedMode === 'dial') {
-        setStudioMode(savedMode)
+      if (savedMode === 'space' || savedMode === 'minecraft' || savedMode === 'cozy' || savedMode === 'dial') {
+        setStudioMode(savedMode as StudioMode)
       }
     } catch {}
 
@@ -680,7 +682,7 @@ function TimerContent() {
   return (
     <div
       className={`relative w-full transition-all duration-300 ${
-        studioMode === 'minecraft'
+        studioMode === 'space' || studioMode === 'minecraft'
           ? 'w-full h-screen min-h-screen overflow-hidden bg-black'
           : isFullscreen
           ? 'fixed inset-0 z-50 bg-[#572c47] p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
@@ -691,7 +693,7 @@ function TimerContent() {
       <audio ref={audioRef} src={currentStation.url} preload="none" />
 
       {/* ─── Mode Switcher Bar (Only in Cozy / Dial Mode) ─────── */}
-      {studioMode !== 'minecraft' && (
+      {studioMode !== 'space' && studioMode !== 'minecraft' && (
         <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 shadow-lg px-2 sm:px-3 backdrop-blur-md">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <Link
@@ -703,7 +705,20 @@ function TimerContent() {
               <span className="hidden sm:inline">الرئيسية</span>
             </Link>
 
-            {/* 1. Minecraft 4K Rainy Cottage */}
+            {/* 1. Space 3D */}
+            <button
+              onClick={() => {
+                setStudioMode('space')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'space')
+                } catch {}
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all"
+            >
+              <span>🚀 رحلة الفضاء 3D</span>
+            </button>
+
+            {/* 2. Minecraft 4K Rainy Cottage */}
             <button
               onClick={() => {
                 setStudioMode('minecraft')
@@ -716,7 +731,7 @@ function TimerContent() {
               <span>🌧️ كوخ ماين كرافت 4K</span>
             </button>
 
-            {/* 2. Isometric Cozy Studio */}
+            {/* 3. Isometric Cozy Studio */}
             <button
               onClick={() => {
                 setStudioMode('cozy')
@@ -733,7 +748,7 @@ function TimerContent() {
               <span>🏡 استوديو اللوفاي</span>
             </button>
 
-            {/* 3. Precision Dial */}
+            {/* 4. Precision Dial */}
             <button
               onClick={() => {
                 setStudioMode('dial')
@@ -765,12 +780,103 @@ function TimerContent() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 1. MINECRAFT 4K RAINY COTTAGE FOCUS ROOM (MATCHING SCREENSHOT 2!)    */}
+      {/* 1. SPACE ODYSSEY 3D REAL FLIGHT DECK (NEW FLAGSHIP EXPERIENCE!)     */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {studioMode === 'minecraft' ? (
+      {studioMode === 'space' ? (
+        <div className="relative w-full h-full min-h-screen overflow-hidden">
+          {/* Subtle Floating Mode Switcher for Space Mode */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-full bg-black/75 backdrop-blur-md border border-cyan-500/40 shadow-2xl">
+            <button
+              onClick={() => {
+                setStudioMode('space')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'space')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold bg-cyan-600 text-white shadow-md shadow-cyan-600/50 transition-all"
+            >
+              🚀 رحلة الفضاء 3D
+            </button>
+            <button
+              onClick={() => {
+                setStudioMode('minecraft')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+            >
+              🌧️ ماين كرافت
+            </button>
+            <button
+              onClick={() => {
+                setStudioMode('cozy')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'cozy')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+            >
+              🏡 اللوفاي
+            </button>
+            <button
+              onClick={() => {
+                setStudioMode('dial')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'dial')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+            >
+              ⏱️ القرص
+            </button>
+          </div>
+
+          <SpaceStudyRoom
+            running={running}
+            remaining={remaining}
+            totalSeconds={totalSeconds}
+            mode={mode}
+            completedCycles={completedCycles}
+            subject={subject}
+            isFullscreen={isFullscreen}
+            activeSessionId={activeSessionId}
+            sessionLoading={sessionLoading}
+            finished={finished}
+            earnedXp={earnedXp}
+            sessionStats={sessionStats}
+            onToggleRunning={toggleRunning}
+            onReset={handleReset}
+            onSetPreset={setPresetMinutes}
+            onAddFiveMinutes={addFiveMinutes}
+            onCompleteSession={() => completeSession()}
+            onToggleFullscreen={toggleFullscreen}
+            onSelectSubject={(id) => {
+              setSelectedSubject(id)
+              saveStoredPomodoro({ selectedSubject: id })
+            }}
+            onCloseCompletionModal={() => {
+              setFinished(false)
+              setEarnedXp(null)
+              setSessionStats(null)
+            }}
+          />
+        </div>
+      ) : studioMode === 'minecraft' ? (
         <div className="relative w-full h-full min-h-screen overflow-hidden">
           {/* Subtle Floating Mode Switcher for Minecraft Mode */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 shadow-2xl">
+            <button
+              onClick={() => {
+                setStudioMode('space')
+                try {
+                  localStorage.setItem('aegis_focus_studio_mode', 'space')
+                } catch {}
+              }}
+              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+            >
+              🚀 رحلة الفضاء
+            </button>
             <button
               onClick={() => {
                 setStudioMode('minecraft')

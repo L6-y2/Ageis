@@ -4,19 +4,19 @@
 :root {
   --font-cairo: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-minecraft: 'Silkscreen', 'Courier New', monospace;
-  /* Comfort Focus Dark Palette: Ergonomic, Zero-Glare, Soothing for Study */
-  --bg-main: #0e1217;
-  --bg-card: #151a22;
-  --bg-elevated: #1c222c;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(16, 185, 129, 0.35);
+  /* Cosmic Deep Space Palette: Starship Console, Deep Nebula, Zero-Glare */
+  --bg-main: #030712;
+  --bg-card: #080e1e;
+  --bg-elevated: #0e172e;
+  --border-subtle: rgba(56, 189, 248, 0.12);
+  --border-hover: rgba(56, 189, 248, 0.45);
 }
 
 @theme {
-  --color-brand-primary: #10b981;
+  --color-brand-primary: #0ea5e9;
   --color-brand-emerald: #10b981;
   --color-brand-amber: #f59e0b;
-  --color-brand-sky: #0ea5e9;
+  --color-brand-sky: #38bdf8;
   --color-brand-rose: #f43f5e;
 }
 
@@ -37,16 +37,16 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Ergonomic, calming ambient background */
+/* Cosmic Nebula Atmospheric Glow */
 .ambient-bg {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
   background: 
-    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, rgba(14, 165, 233, 0.035) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.03) 0px, transparent 50%);
+    radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.08) 0px, transparent 55%),
+    radial-gradient(at 0% 50%, rgba(99, 102, 241, 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.06) 0px, transparent 50%);
 }
 
 /* Premium Surface Panels */

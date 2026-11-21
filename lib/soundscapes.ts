@@ -19,6 +19,10 @@ class SoundscapeEngine {
   private windLfo: OscillatorNode | null = null
   // Brown noise
   private brownSource: AudioBufferSourceNode | null = null
+  // Space Engine Drone nodes
+  private spaceGain: GainNode | null = null
+  private spaceOsc1: OscillatorNode | null = null
+  private spaceOsc2: OscillatorNode | null = null
 
   private isInitialized = false
 
@@ -55,10 +59,15 @@ class SoundscapeEngine {
     this.brownGain.gain.setValueAtTime(0, this.ctx.currentTime)
     this.brownGain.connect(this.masterGain)
 
+    this.spaceGain = this.ctx.createGain()
+    this.spaceGain.gain.setValueAtTime(0, this.ctx.currentTime)
+    this.spaceGain.connect(this.masterGain)
+
     this.setupRain()
     this.setupFire()
     this.setupWind()
     this.setupBrownNoise()
+    this.setupSpaceEngine()
 
     this.isInitialized = true
     return this.ctx
@@ -213,6 +222,39 @@ class SoundscapeEngine {
     this.brownSource = source
   }
 
+  // 5. Procedural Deep Space Warp Engine (Low 55Hz + 110Hz sub-bass hum + lowpass filter)
+  private setupSpaceEngine() {
+    if (!this.ctx || !this.spaceGain) return
+
+    const filter = this.ctx.createBiquadFilter()
+    filter.type = 'lowpass'
+    filter.frequency.setValueAtTime(180, this.ctx.currentTime)
+    filter.connect(this.spaceGain)
+
+    // Fundamental Warp Frequency (55Hz / A1)
+    const osc1 = this.ctx.createOscillator()
+    osc1.type = 'sine'
+    osc1.frequency.setValueAtTime(55, this.ctx.currentTime)
+
+    // Harmonic Overtones (110Hz / A2)
+    const osc2 = this.ctx.createOscillator()
+    osc2.type = 'triangle'
+    osc2.frequency.setValueAtTime(110, this.ctx.currentTime)
+
+    const oscGain = this.ctx.createGain()
+    oscGain.gain.setValueAtTime(0.4, this.ctx.currentTime)
+    osc2.connect(oscGain)
+
+    osc1.connect(filter)
+    oscGain.connect(filter)
+
+    osc1.start(0)
+    osc2.start(0)
+
+    this.spaceOsc1 = osc1
+    this.spaceOsc2 = osc2
+  }
+
   // Volume Controls (0 to 1)
   public setRain(volume: number) {
     this.initContext()
@@ -242,12 +284,20 @@ class SoundscapeEngine {
     }
   }
 
+  public setSpaceEngine(volume: number) {
+    this.initContext()
+    if (this.spaceGain && this.ctx) {
+      this.spaceGain.gain.setTargetAtTime(Math.max(0, Math.min(1, volume)), this.ctx.currentTime, 0.08)
+    }
+  }
+
   public stopAll() {
     if (!this.ctx) return
     this.setRain(0)
     this.setFire(0)
     this.setWind(0)
     this.setBrownNoise(0)
+    this.setSpaceEngine(0)
   }
 }
 
