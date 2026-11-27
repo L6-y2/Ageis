@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ChevronLeft, Sparkles, BookOpen } from 'lucide-react'
+import { ChevronLeft, BookOpen } from 'lucide-react'
 import { SUBJECTS } from '@/lib/types'
+import { SubjectIcon, getSubjectTheme } from '@/components/AcademicIcons'
 
 interface SubjectCardProps {
   subjectId: number
@@ -16,62 +17,63 @@ export default function SubjectCard({ subjectId, mastered, total, percentage }: 
   const subject = SUBJECTS.find((s) => s.id === subjectId)
   if (!subject) return null
 
+  const theme = getSubjectTheme(subjectId)
+
   return (
-    <motion.div
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.98 }}
-    >
-      <Link href={`/curriculum/${subjectId}`} className="block group">
-        <div className="glass-interactive rounded-3xl p-4 relative overflow-hidden border border-slate-800/90 hover:border-indigo-500/40">
-          {/* Subtle background ambient corner glow */}
-          <div
-            className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${subject.color} opacity-10 rounded-full blur-2xl pointer-events-none group-hover:opacity-20 transition-opacity`}
-          />
-
-          <div className="flex items-center justify-between gap-3 mb-3 relative z-10">
-            <div className="flex items-center gap-3.5">
-              <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${subject.color} flex items-center justify-center text-2xl shadow-lg ring-1 ring-white/20 group-hover:scale-105 transition-transform`}
-              >
-                {subject.icon}
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-100 text-base group-hover:text-white transition-colors flex items-center gap-1.5">
-                  {subject.name}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                  <BookOpen size={12} className="text-slate-500" />
-                  <span>{`${mastered} من ${total} درس متقن`}</span>
-                </p>
-              </div>
+    <Link href={`/curriculum/${subjectId}`} className="block group rounded-[14px]">
+      <article className="aegis-panel-interactive rounded-[14px] p-5 sm:p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div
+              className={`w-12 h-12 rounded-[10px] ${theme.bgSubtle} border ${theme.border} flex items-center justify-center shrink-0`}
+            >
+              <SubjectIcon subjectId={subjectId} size={22} />
             </div>
-
-            {/* Percentage Badge */}
-            <div className="flex items-center gap-1.5">
-              <span className={`text-sm font-black tracking-tight px-2.5 py-1 rounded-xl bg-slate-900/80 border border-slate-700/60 text-slate-200 group-hover:border-indigo-500/50 transition-colors`}>
-                {`${percentage}%`}
-              </span>
-              <div className="w-7 h-7 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 group-hover:translate-x-[-2px] transition-all">
-                <ChevronLeft size={16} />
-              </div>
+            <div className="min-w-0">
+              <h2 className="font-semibold text-[#ECEEF2] text-base sm:text-lg group-hover:text-[#D4AF37] transition-colors truncate">
+                {subject.name}
+              </h2>
+              <p className="text-xs text-[#9CA3AF] mt-1 flex items-center gap-1.5">
+                <BookOpen size={13} className="text-[#7D8594] shrink-0" />
+                <span>
+                  <span dir="ltr" className="font-tabular text-[#ECEEF2]">{mastered}</span> من{' '}
+                  <span dir="ltr" className="font-tabular">{total}</span> درس متقن
+                </span>
+              </p>
             </div>
           </div>
 
-          {/* Progress Bar Container */}
-          <div className="relative h-2.5 bg-slate-950/70 rounded-full overflow-hidden p-0.5 border border-slate-800/60 z-10">
-            <motion.div
-              className={`h-full bg-gradient-to-r ${subject.color} rounded-full relative`}
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.max(percentage, 2)}%` }}
-              transition={{ duration: 1.1, ease: 'easeOut', delay: 0.15 }}
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              dir="ltr"
+              className={`text-sm font-bold font-tabular px-2.5 py-1 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] ${theme.text}`}
             >
-              {percentage > 5 && (
-                <div className="absolute inset-y-0 right-0 w-2 bg-white/40 rounded-full blur-[1px]" />
-              )}
-            </motion.div>
+              {percentage}%
+            </span>
+            <div className="w-8 h-8 rounded-[8px] bg-[#191C25] border border-[rgba(236,238,242,0.08)] flex items-center justify-center text-[#7D8594] group-hover:text-[#ECEEF2] group-hover:border-[rgba(212,175,55,0.35)] transition-colors">
+              <ChevronLeft size={16} />
+            </div>
           </div>
         </div>
-      </Link>
-    </motion.div>
+
+        {/* Crisp Progress Track */}
+        <div className="space-y-1.5">
+          <div className="h-2 bg-[#07080B] rounded-full overflow-hidden p-0.5 border border-[rgba(236,238,242,0.07)]">
+            <motion.div
+              className={`h-full ${theme.barBg} rounded-full`}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(percentage, 2)}%` }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-[#7D8594]">
+            <span>فهرس الفصول والدروس</span>
+            <span className="font-tabular">
+              متبقي <span dir="ltr">{Math.max(0, total - mastered)}</span>
+            </span>
+          </div>
+        </div>
+      </article>
+    </Link>
   )
 }

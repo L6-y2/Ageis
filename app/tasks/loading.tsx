@@ -1,42 +1,26 @@
 export default function TasksLoading() {
   return (
-    <div className="min-h-screen pb-28 pt-8 px-4 sm:px-6" dir="rtl">
-      {/* Header skeleton */}
-      <div className="flex items-center justify-between mb-6 animate-pulse">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white/10" />
-          <div>
-            <div className="h-6 w-32 bg-white/10 rounded-lg mb-1.5" />
-            <div className="h-3.5 w-44 bg-white/5 rounded-lg" />
-          </div>
+    <div className="min-h-screen bg-[#0A0B0E] lg:pr-60" dir="rtl">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 lg:pt-8 pb-24 lg:pb-10">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgba(236,238,242,0.07)] animate-pulse">
+        <div className="space-y-2">
+          <div className="h-6 w-40 bg-[#191C25] rounded" />
+          <div className="h-3.5 w-60 bg-[#12141C] rounded" />
         </div>
-        <div className="h-9 w-28 bg-white/10 rounded-2xl" />
+        <div className="h-10 w-28 bg-[#191C25] rounded-[10px]" />
       </div>
 
-      {/* Tabs skeleton */}
-      <div className="grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl bg-white/5 mb-5 animate-pulse">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-9 rounded-xl bg-white/5" />
-        ))}
-      </div>
-
-      {/* Task cards skeleton */}
-      <div className="space-y-3 animate-pulse">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-5 animate-pulse">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className="h-20 rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between gap-3"
-          >
-            <div className="flex items-center gap-3 flex-1">
-              <div className="w-6 h-6 rounded-lg bg-white/10 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-48 bg-white/10 rounded" />
-                <div className="h-3 w-28 bg-white/5 rounded" />
-              </div>
-            </div>
-            <div className="h-7 w-20 rounded-xl bg-white/5 shrink-0" />
-          </div>
+          <div key={i} className="h-24 rounded-[12px] bg-[#12141C] border border-[rgba(236,238,242,0.07)]" />
         ))}
+      </div>
+
+      <div className="space-y-3 animate-pulse">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-20 rounded-[12px] bg-[#12141C] border border-[rgba(236,238,242,0.07)]" />
+        ))}
+      </div>
       </div>
     </div>
   )

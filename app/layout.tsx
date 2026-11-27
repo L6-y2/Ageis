@@ -1,10 +1,45 @@
 import type { Metadata, Viewport } from 'next'
-import { Cairo } from 'next/font/google'
+import {
+  Noto_Sans_Arabic,
+  Noto_Naskh_Arabic,
+  Newsreader,
+  Inter,
+  JetBrains_Mono,
+} from 'next/font/google'
 import './globals.css'
 
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  variable: '--font-cairo',
+const notoSansArabic = Noto_Sans_Arabic({
+  subsets: ['arabic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans-ar',
+  display: 'swap',
+})
+
+const notoNaskhArabic = Noto_Naskh_Arabic({
+  subsets: ['arabic'],
+  weight: ['500', '600', '700'],
+  variable: '--font-display-ar',
+  display: 'swap',
+})
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-display-en',
+  display: 'swap',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-sans-en',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-mono-tabular',
   display: 'swap',
 })
 
@@ -19,7 +54,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#060913',
+  themeColor: '#0A0B0E',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -31,16 +66,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ar" dir="rtl" className="dark">
-      <body className={`${cairo.variable} font-sans bg-[#060913] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200`}>
-        {/* Ambient Glow Atmosphere */}
-        <div className="ambient-bg">
-          <div className="ambient-blob-1" />
-          <div className="ambient-blob-2" />
-          <div className="ambient-blob-3" />
-        </div>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`dark ${notoSansArabic.variable} ${notoNaskhArabic.variable} ${newsreader.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="bg-[#0A0B0E] text-[#ECEEF2] antialiased selection:bg-[#D4AF37]/25 selection:text-[#ECEEF2]">
+        {/* Subtle Academic Obsidian Atmosphere */}
+        <div className="ambient-bg" aria-hidden="true" />
 
-        {/* Responsive Content Shell - Expanded for Desktop and Mobile */}
+        {/* Responsive Content Shell */}
         <div className="relative z-10 w-full min-h-screen">
           {children}
         </div>

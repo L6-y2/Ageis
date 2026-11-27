@@ -20,9 +20,16 @@ import {
   Award,
   Zap,
   Globe2,
+  X,
+  Check,
+  Flame,
+  Rocket,
+  BarChart2,
+  ArrowLeft,
 } from 'lucide-react'
 import Link from 'next/link'
 import { soundscapeEngine } from '@/lib/soundscapes'
+import { SubjectIcon } from '@/components/AcademicIcons'
 import {
   SpaceStationWaypoint,
   SPACE_WAYPOINTS,
@@ -182,33 +189,36 @@ export default function SpaceStudyRoom({
       </div>
 
       {/* ─── 3. Top-Right Mission Status & Waypoint Selector ───────────────── */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-30 flex items-center gap-2 sm:gap-3">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-30 flex items-center gap-2 sm:gap-2.5">
         {/* Warp Status Indicator */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/15 text-xs font-bold shadow-lg">
+        <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-[10px] bg-[#0A0B0E]/80 backdrop-blur-md border border-[rgba(236,238,242,0.12)] text-xs font-semibold">
           <span
             className={`w-2 h-2 rounded-full ${
-              running ? 'bg-cyan-400 animate-ping' : 'bg-amber-400'
+              running ? 'bg-[#4EA87E]' : 'bg-[#D4AF37]'
             }`}
           />
-          <span className={running ? 'text-cyan-300' : 'text-amber-300'}>
+          <span className={running ? 'text-[#4EA87E]' : 'text-[#D4AF37]'}>
             {running ? 'WARP 4.5 ENGAGED' : 'ORBITAL DRIFT'}
           </span>
         </div>
 
         {/* 200+ Waypoint Star Chart Selector Button */}
         <button
+          type="button"
           onClick={() => setShowWaypointMap(true)}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600/60 to-blue-600/60 hover:from-cyan-500/70 hover:to-blue-500/70 backdrop-blur-xl border border-cyan-400/50 text-xs font-bold text-white transition-all active:scale-95 shadow-lg shadow-cyan-900/30"
-          title="عرض خريطة الـ 200 محطة فضائية واختيار مسار الرحلة"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-[10px] bg-[#12141C]/90 hover:bg-[#191C25] backdrop-blur-md border border-[rgba(212,175,55,0.40)] text-xs font-semibold text-[#ECEEF2] transition-colors min-h-[40px]"
+          title="عرض خريطة الـ 220 محطة فضائية واختيار مسار الرحلة"
         >
-          <Compass size={16} className="text-cyan-300" />
-          <span>خريطة الـ 200 محطة 🪐</span>
+          <Compass size={15} className="text-[#D4AF37]" />
+          <span>خريطة المحطات (220)</span>
         </button>
 
         {/* Camera Perspective Toggle */}
         <button
+          type="button"
           onClick={toggleCamera}
-          className="p-2 sm:p-2.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/15 text-cyan-300 hover:text-white transition-all active:scale-95 shadow-lg"
+          aria-label="تبديل زاوية الكاميرا"
+          className="w-10 h-10 rounded-[10px] bg-[#0A0B0E]/80 hover:bg-[#191C25] backdrop-blur-md border border-[rgba(236,238,242,0.14)] text-[#ECEEF2] flex items-center justify-center transition-colors"
           title={`تبديل المنظور: ${cameraView === 'chase' ? 'خلف المركبة' : cameraView === 'cockpit' ? 'قمرة القيادة' : 'مداري'}`}
         >
           <Camera size={16} />
@@ -216,11 +226,13 @@ export default function SpaceStudyRoom({
 
         {/* Audio Mute/Unmute */}
         <button
+          type="button"
           onClick={toggleSound}
-          className={`p-2 sm:p-2.5 rounded-xl backdrop-blur-xl border transition-all active:scale-95 shadow-lg ${
+          aria-label={soundEnabled ? 'كتم محرك الفضاء' : 'تشغيل محرك الفضاء'}
+          className={`w-10 h-10 rounded-[10px] backdrop-blur-md border flex items-center justify-center transition-colors ${
             soundEnabled
-              ? 'bg-cyan-600/60 border-cyan-400 text-white shadow-cyan-600/30'
-              : 'bg-black/60 border-white/15 text-white/50 hover:text-white'
+              ? 'bg-[#191C25]/90 border-[rgba(212,175,55,0.45)] text-[#D4AF37]'
+              : 'bg-[#0A0B0E]/80 border-[rgba(236,238,242,0.14)] text-[#7D8594] hover:text-[#ECEEF2]'
           }`}
           title={soundEnabled ? 'كتم محرك الفضاء' : 'تشغيل محرك الفضاء'}
         >
@@ -229,8 +241,10 @@ export default function SpaceStudyRoom({
 
         {/* Fullscreen */}
         <button
+          type="button"
           onClick={onToggleFullscreen}
-          className="p-2 sm:p-2.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-xl border border-white/15 text-white transition-all active:scale-95 shadow-lg"
+          aria-label={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
+          className="w-10 h-10 rounded-[10px] bg-[#0A0B0E]/80 hover:bg-[#191C25] backdrop-blur-md border border-[rgba(236,238,242,0.14)] text-[#ECEEF2] flex items-center justify-center transition-colors"
           title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
         >
           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -239,56 +253,57 @@ export default function SpaceStudyRoom({
 
       {/* ─── 4. Center Top Sector Badge ───────────────────────────────────── */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20">
-        <span className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-black/70 backdrop-blur-md border border-cyan-500/30 text-xs font-bold text-cyan-300 shadow-xl shadow-cyan-950/50">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          <span>{currentWaypoint.sectorAr}</span>
-          <span className="text-white/40">•</span>
-          <span className="text-white/80">{subject.name}</span>
+        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0A0B0E]/80 backdrop-blur-md border border-[rgba(212,175,55,0.28)] text-xs font-semibold text-[#ECEEF2]">
+          <span className={`w-1.5 h-1.5 rounded-full ${running ? 'bg-[#4EA87E]' : 'bg-[#D4AF37]'}`} />
+          <span className="text-[#D4AF37]">{currentWaypoint.sectorAr}</span>
+          <span className="text-[#6B7280]">•</span>
+          <span>{subject.name}</span>
         </span>
       </div>
 
       {/* ─── 5. Bottom Center Cockpit Telemetry, Timer & Hotbar ────────────── */}
       <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3 w-full max-w-xl px-2">
         {/* Holographic Countdown Timer */}
-        <div
+        <button
+          type="button"
           dir="ltr"
           onClick={onToggleRunning}
-          className="font-bold text-5xl sm:text-7xl md:text-8xl text-white tracking-widest select-none cursor-pointer hover:scale-105 transition-transform"
+          aria-label={running ? 'إيقاف الرحلة مؤقتاً' : 'بدء الرحلة'}
+          className="font-bold font-tabular text-5xl sm:text-7xl md:text-8xl text-[#ECEEF2] tracking-wider select-none hover:opacity-90 transition-opacity"
           style={{
-            textShadow:
-              '0 0 20px rgba(56, 189, 248, 0.8), 0 0 40px rgba(6, 182, 212, 0.4), 2px 2px 0px #000',
+            textShadow: '0 4px 24px rgba(0, 0, 0, 0.85)',
           }}
           title={running ? 'انقر للإيقاف المؤقت' : 'انقر لبدء الرحلة'}
         >
           {`${mm}:${ss}`}
-        </div>
+        </button>
 
         {/* ─── 18-Segment Warp Distance Charge Bar ─────────────────────────── */}
-        <div className="w-full max-w-[340px] sm:max-w-[440px] flex items-center justify-between gap-1 p-1 rounded-md bg-black/80 backdrop-blur-md border border-cyan-500/40 shadow-2xl">
+        <div className="w-full max-w-[340px] sm:max-w-[440px] flex items-center justify-between gap-1 p-1 rounded-[8px] bg-[#0A0B0E]/85 backdrop-blur-md border border-[rgba(236,238,242,0.14)]">
           {Array.from({ length: totalSegments }).map((_, idx) => {
             const isFilled = idx < activeSegments
             return (
               <div
                 key={idx}
-                className={`flex-1 h-3 sm:h-3.5 border-r border-black/90 transition-all duration-300 ${
-                  isFilled
-                    ? 'bg-gradient-to-t from-cyan-500 to-sky-300 shadow-[0_0_10px_#38bdf8]'
-                    : 'bg-slate-900/70'
+                className={`flex-1 h-2.5 sm:h-3 rounded-[2px] transition-colors duration-300 ${
+                  isFilled ? 'bg-[#D4AF37]' : 'bg-[#191C25]'
                 }`}
               />
             )
           })}
         </div>
 
-        {/* ─── 9-Slot Sci-Fi Mission Control Hotbar ────────────────────────── */}
-        <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 rounded-xl bg-slate-950/90 backdrop-blur-xl border border-cyan-500/40 shadow-2xl shadow-cyan-950/60">
+        {/* ─── 9-Slot Mission Control Hotbar ────────────────────────── */}
+        <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 rounded-[12px] bg-[#0D0F15]/92 backdrop-blur-md border border-[rgba(236,238,242,0.14)] shadow-2xl">
           {/* Slot 1: Play/Pause */}
           <button
+            type="button"
             onClick={onToggleRunning}
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg border flex items-center justify-center font-bold transition-all active:scale-90 ${
+            aria-label={running ? 'إيقاف مؤقت' : 'بدء الرحلة'}
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] border flex items-center justify-center font-bold transition-colors ${
               running
-                ? 'bg-amber-600/80 border-amber-300 text-white shadow-md'
-                : 'bg-slate-900 border-cyan-500/50 text-cyan-400 hover:bg-slate-800'
+                ? 'bg-[#C88A36] border-[#C88A36] text-[#0A0B0E]'
+                : 'bg-[#D4AF37] border-[#E0C058] text-[#0A0B0E]'
             }`}
             title={running ? 'إيقاف مؤقت' : 'بدء الرحلة'}
           >
@@ -297,11 +312,12 @@ export default function SpaceStudyRoom({
 
           {/* Slot 2: 25 Min Preset */}
           <button
+            type="button"
             onClick={() => onSetPreset(25)}
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg border flex items-center justify-center font-bold text-xs transition-all active:scale-90 ${
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] border flex items-center justify-center font-semibold text-xs font-tabular transition-colors ${
               totalSeconds === 25 * 60
-                ? 'bg-cyan-500 text-slate-950 border-white shadow-md font-black'
-                : 'bg-slate-900 border-slate-700 text-white/90 hover:bg-slate-800'
+                ? 'bg-[#191C25] text-[#D4AF37] border-[rgba(212,175,55,0.45)]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2]'
             }`}
             title="25 دقيقة (رحلة قياسية)"
           >
@@ -310,11 +326,12 @@ export default function SpaceStudyRoom({
 
           {/* Slot 3: 45 Min Preset */}
           <button
+            type="button"
             onClick={() => onSetPreset(45)}
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg border flex items-center justify-center font-bold text-xs transition-all active:scale-90 ${
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] border flex items-center justify-center font-semibold text-xs font-tabular transition-colors ${
               totalSeconds === 45 * 60
-                ? 'bg-cyan-500 text-slate-950 border-white shadow-md font-black'
-                : 'bg-slate-900 border-slate-700 text-white/90 hover:bg-slate-800'
+                ? 'bg-[#191C25] text-[#D4AF37] border-[rgba(212,175,55,0.45)]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2]'
             }`}
             title="45 دقيقة (رحلة متقدمة)"
           >
@@ -323,11 +340,12 @@ export default function SpaceStudyRoom({
 
           {/* Slot 4: 60 Min Preset */}
           <button
+            type="button"
             onClick={() => onSetPreset(60)}
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg border flex items-center justify-center font-bold text-xs transition-all active:scale-90 ${
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] border flex items-center justify-center font-semibold text-xs font-tabular transition-colors ${
               totalSeconds === 60 * 60
-                ? 'bg-cyan-500 text-slate-950 border-white shadow-md font-black'
-                : 'bg-slate-900 border-slate-700 text-white/90 hover:bg-slate-800'
+                ? 'bg-[#191C25] text-[#D4AF37] border-[rgba(212,175,55,0.45)]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2]'
             }`}
             title="60 دقيقة (رحلة كونية عميقة)"
           >
@@ -336,8 +354,9 @@ export default function SpaceStudyRoom({
 
           {/* Slot 5: +5 Min */}
           <button
+            type="button"
             onClick={onAddFiveMinutes}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-white/90 transition-all active:scale-90"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] bg-[#12141C] hover:bg-[#191C25] border border-[rgba(236,238,242,0.10)] flex items-center justify-center font-semibold text-xs font-tabular text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             title="إضافة 5 دقائق لمسار الرحلة"
           >
             +5د
@@ -345,8 +364,10 @@ export default function SpaceStudyRoom({
 
           {/* Slot 6: Reset */}
           <button
+            type="button"
             onClick={onReset}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-white/90 transition-all active:scale-90"
+            aria-label="إعادة ضبط المسار"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] bg-[#12141C] hover:bg-[#191C25] border border-[rgba(236,238,242,0.10)] flex items-center justify-center text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             title="إعادة ضبط المسار"
           >
             <RotateCcw size={15} />
@@ -354,11 +375,13 @@ export default function SpaceStudyRoom({
 
           {/* Slot 7: Audio Toggle */}
           <button
+            type="button"
             onClick={toggleSound}
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg border flex items-center justify-center transition-all active:scale-90 ${
+            aria-label="طنين محرك الفضاء"
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] border flex items-center justify-center transition-colors ${
               soundEnabled
-                ? 'bg-cyan-700/80 border-cyan-300 text-cyan-200 shadow-md'
-                : 'bg-slate-900 border-slate-700 text-white/60 hover:text-white'
+                ? 'bg-[#191C25] border-[rgba(212,175,55,0.40)] text-[#D4AF37]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.10)] text-[#7D8594] hover:text-[#ECEEF2]'
             }`}
             title="طنين محرك الفضاء"
           >
@@ -367,8 +390,10 @@ export default function SpaceStudyRoom({
 
           {/* Slot 8: Camera Perspective */}
           <button
+            type="button"
             onClick={toggleCamera}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-white/90 transition-all active:scale-90"
+            aria-label="تبديل زاوية الكاميرا"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] bg-[#12141C] hover:bg-[#191C25] border border-[rgba(236,238,242,0.10)] flex items-center justify-center text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             title="تبديل زاوية الكاميرا"
           >
             <Camera size={16} />
@@ -376,8 +401,10 @@ export default function SpaceStudyRoom({
 
           {/* Slot 9: Fullscreen */}
           <button
+            type="button"
             onClick={onToggleFullscreen}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-white/90 transition-all active:scale-90"
+            aria-label={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[8px] bg-[#12141C] hover:bg-[#191C25] border border-[rgba(236,238,242,0.10)] flex items-center justify-center text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
           >
             {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -386,18 +413,16 @@ export default function SpaceStudyRoom({
 
         {/* ─── 6. Database Flight End & XP Recording Button ────────────────── */}
         <button
+          type="button"
           onClick={onCompleteSession}
           disabled={sessionLoading}
-          className="flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-sky-600 to-indigo-600 hover:brightness-110 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-cyan-900/60 border border-cyan-300/80 transition-all cursor-pointer"
-          style={{
-            textShadow: '0 0 10px rgba(6,182,212,0.8), 1px 1px 0px #000',
-          }}
+          className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] disabled:opacity-50 text-[#0A0B0E] font-semibold text-xs sm:text-sm shadow-xl transition-colors min-h-[44px]"
         >
-          <CheckCircle2 size={18} className="text-white" />
+          <CheckCircle2 size={17} />
           <span>
             {sessionLoading
               ? 'جاري حفظ بيانات الرحلة في قاعدة البيانات...'
-              : '🛰️ إتمام الرحلة وتسجيل بيانات الاستكشاف والـ XP في السيرفر'}
+              : 'إتمام الرحلة وتسجيل الاستكشاف والـ XP'}
           </span>
         </button>
       </div>
@@ -405,55 +430,65 @@ export default function SpaceStudyRoom({
       {/* ─── 7. Interactive Galaxy Star Map & 200+ Waypoints Modal ─────────── */}
       <AnimatePresence>
         {showWaypointMap && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(6,7,10,0.84)] backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl max-h-[85vh] rounded-2xl bg-slate-950/95 border border-cyan-500/40 p-5 shadow-2xl flex flex-col text-white"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.2 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="خريطة المحطات الفضائية"
+              className="w-full max-w-2xl max-h-[85vh] rounded-[16px] bg-[#191C25] border border-[rgba(236,238,242,0.14)] p-5 shadow-2xl flex flex-col text-[#ECEEF2]"
             >
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Compass size={20} className="text-cyan-400" />
+              <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(236,238,242,0.08)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-[10px] bg-[rgba(212,175,55,0.10)] border border-[rgba(212,175,55,0.32)] flex items-center justify-center text-[#D4AF37]">
+                    <Compass size={18} />
+                  </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-cyan-300">
-                      خريطة المحطات الفضائية ومسارات الرحلات (220 محطة)
+                    <h3 className="text-sm sm:text-base font-bold text-[#ECEEF2]">
+                      خريطة المحطات الفضائية (220 محطة)
                     </h3>
-                    <p className="text-[11px] text-slate-400">
-                      اختر مسار رحلتك القادمة لكل مادة ووحدة دراسية
+                    <p className="text-[11px] text-[#9CA3AF]">
+                      اختر مسار رحلتك القادمة لكل مادة دراسية
                     </p>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowWaypointMap(false)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300"
+                  aria-label="إغلاق خريطة المحطات"
+                  className="w-9 h-9 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2] flex items-center justify-center"
                 >
-                  ✕ إغلاق
+                  <X size={16} />
                 </button>
               </div>
 
               {/* Sector Tabs */}
-              <div className="flex items-center gap-2 py-3 overflow-x-auto border-b border-slate-800/80">
+              <div className="flex items-center gap-2 py-3 overflow-x-auto border-b border-[rgba(236,238,242,0.07)]">
                 {[
-                  { id: 6, label: '📖 اللغة العربية (55 محطة)', sector: 'أوريون' },
-                  { id: 9, label: '🏛️ التاريخ (55 محطة)', sector: 'كرونوس' },
-                  { id: 8, label: '🌍 الإنجليزية (55 محطة)', sector: 'قنطورس' },
-                  { id: 7, label: '💻 البرمجة (55 محطة)', sector: 'أندروميدا' },
+                  { id: 6, label: 'اللغة العربية (55)', sector: 'أوريون' },
+                  { id: 9, label: 'التاريخ (55)', sector: 'كرونوس' },
+                  { id: 8, label: 'الإنجليزية (55)', sector: 'قنطورس' },
+                  { id: 7, label: 'البرمجة (55)', sector: 'أندروميدا' },
                 ].map((sec) => (
                   <button
+                    type="button"
                     key={sec.id}
                     onClick={() => {
                       setActiveSectorFilter(sec.id)
                       if (onSelectSubject) onSelectSubject(sec.id)
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-semibold whitespace-nowrap transition-colors min-h-[38px] border ${
                       activeSectorFilter === sec.id
-                        ? 'bg-cyan-600 text-white shadow-md shadow-cyan-900/40'
-                        : 'bg-slate-900 text-slate-400 hover:text-white'
+                        ? 'bg-[#12141C] border-[rgba(212,175,55,0.40)] text-[#ECEEF2]'
+                        : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
                     }`}
                   >
-                    {sec.label}
+                    <SubjectIcon subjectId={sec.id} size={13} />
+                    <span>{sec.label}</span>
                   </button>
                 ))}
               </div>
@@ -463,46 +498,63 @@ export default function SpaceStudyRoom({
                 {getWaypointsBySubject(activeSectorFilter).map((wp) => {
                   const isCurrent = wp.id === currentWaypoint.id
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={wp.id}
                       onClick={() => {
                         setCurrentWaypoint(wp)
                         setShowWaypointMap(false)
                       }}
-                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`w-full text-right flex items-center justify-between p-3 rounded-[10px] border transition-colors ${
                         isCurrent
-                          ? 'bg-cyan-950/60 border-cyan-400 shadow-md shadow-cyan-950/50'
-                          : 'bg-slate-900/50 border-slate-800 hover:bg-slate-900 hover:border-slate-700'
+                          ? 'bg-[#12141C] border-[rgba(212,175,55,0.45)]'
+                          : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] hover:bg-[#12141C] hover:border-[rgba(236,238,242,0.18)]'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-cyan-300">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          dir="ltr"
+                          className="w-9 h-9 rounded-[8px] bg-[#191C25] border border-[rgba(236,238,242,0.10)] flex items-center justify-center text-xs font-bold font-tabular text-[#D4AF37] shrink-0"
+                        >
                           #{wp.id}
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white">{wp.nameAr}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+                            <span className="text-xs font-semibold text-[#ECEEF2] truncate">{wp.nameAr}</span>
+                            <span
+                              dir="ltr"
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-[#191C25] text-[#9CA3AF] font-tabular"
+                            >
                               {wp.code}
                             </span>
                           </div>
-                          <span className="text-[11px] text-cyan-400">{wp.celestialName}</span>
+                          <span className="text-[11px] text-[#7D8594]">{wp.celestialName}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400 font-mono">{wp.distanceLY} LY</span>
-                        <button
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span dir="ltr" className="text-xs text-[#9CA3AF] font-tabular">{wp.distanceLY} LY</span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-semibold ${
                             isCurrent
-                              ? 'bg-cyan-500 text-slate-950'
-                              : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-300'
+                              ? 'bg-[#D4AF37] text-[#0A0B0E]'
+                              : 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(236,238,242,0.10)]'
                           }`}
                         >
-                          {isCurrent ? 'المسار الحالي ✓' : 'تعيين المسار ➔'}
-                        </button>
+                          {isCurrent ? (
+                            <>
+                              <span>المسار الحالي</span>
+                              <Check size={12} />
+                            </>
+                          ) : (
+                            <>
+                              <span>تعيين</span>
+                              <ArrowLeft size={12} />
+                            </>
+                          )}
+                        </span>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>
@@ -514,25 +566,29 @@ export default function SpaceStudyRoom({
       {/* ─── 8. Cosmic Victory & Docking Clearance Modal ──────────────────── */}
       <AnimatePresence>
         {finished && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(6,7,10,0.86)] backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-md rounded-2xl bg-slate-950/95 border-2 border-cyan-400 p-6 shadow-2xl text-center text-white flex flex-col items-center gap-4"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 14 }}
+              transition={{ duration: 0.22 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="اكتمال الرحلة"
+              className="w-full max-w-md rounded-[16px] bg-[#191C25] border border-[rgba(212,175,55,0.40)] p-6 shadow-2xl text-center text-[#ECEEF2] flex flex-col items-center gap-4"
             >
-              <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 shadow-xl shadow-cyan-500/30">
-                <Award size={36} />
+              <div className="w-14 h-14 rounded-[14px] bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.38)] flex items-center justify-center text-[#D4AF37]">
+                <Award size={30} />
               </div>
 
               <div>
-                <h3 className="text-lg sm:text-xl font-black text-cyan-300 tracking-wider">
-                  🛰️ اكتملت الرحلة ورست المركبة بنجاح!
+                <h3 className="text-lg font-bold text-[#ECEEF2]">
+                  اكتملت الرحلة ورست المركبة بنجاح
                 </h3>
-                <p className="text-xs text-slate-300 mt-1">
-                  تم تسجيل إحداثيات الاستكشاف وحفظ نقاط الـ XP في قاعدة بيانات Supabase.
+                <p className="text-xs text-[#9CA3AF] mt-1">
+                  تم تسجيل إحداثيات الاستكشاف وحفظ نقاط الـ XP في قاعدة البيانات.
                 </p>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950 border border-cyan-500/40 text-xs text-cyan-300">
+                <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-[8px] bg-[#07080B] border border-[rgba(212,175,55,0.28)] text-xs text-[#D4AF37]">
                   <MapPin size={13} />
                   <span>تم الرسو في: {currentWaypoint.nameAr}</span>
                 </div>
@@ -540,46 +596,49 @@ export default function SpaceStudyRoom({
 
               {/* Stats Grid */}
               <div className="grid grid-cols-3 gap-2 w-full">
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col items-center">
-                  <span className="text-xs text-slate-400">الـ XP المكتسب</span>
-                  <span className="text-base font-black text-emerald-400 mt-0.5">
+                <div className="p-3 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] flex flex-col items-center">
+                  <span className="text-[11px] text-[#7D8594]">الـ XP المكتسب</span>
+                  <span dir="ltr" className="text-base font-bold font-tabular text-[#4EA87E] mt-0.5">
                     +{earnedXp || Math.max(10, Math.round((totalSeconds / 60) * 1.5))} XP
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col items-center">
-                  <span className="text-xs text-slate-400">مدة الرحلة</span>
-                  <span className="text-base font-black text-cyan-400 mt-0.5">
-                    {Math.round(totalSeconds / 60)} دقيقة
+                <div className="p-3 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] flex flex-col items-center">
+                  <span className="text-[11px] text-[#7D8594]">مدة الرحلة</span>
+                  <span className="text-base font-bold font-tabular text-[#ECEEF2] mt-0.5">
+                    <span dir="ltr">{Math.round(totalSeconds / 60)}</span> د
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col items-center">
-                  <span className="text-xs text-slate-400">التتابع</span>
-                  <span className="text-base font-black text-amber-400 mt-0.5 flex items-center gap-1">
-                    <span>🔥</span>
-                    <span>{sessionStats?.streak || 2} يوم</span>
+                <div className="p-3 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] flex flex-col items-center">
+                  <span className="text-[11px] text-[#7D8594]">التتابع</span>
+                  <span className="text-base font-bold font-tabular text-[#C88A36] mt-0.5 flex items-center gap-1">
+                    <Flame size={14} />
+                    <span><span dir="ltr">{sessionStats?.streak || 2}</span> ي</span>
                   </span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 w-full mt-2">
+              <div className="flex items-center gap-3 w-full mt-1">
                 <button
+                  type="button"
                   onClick={() => {
                     if (onCloseCompletionModal) onCloseCompletionModal()
                     onReset()
                   }}
-                  className="flex-1 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg transition-all active:scale-95 border border-cyan-400"
+                  className="flex-1 py-3 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] text-[#0A0B0E] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors min-h-[44px]"
                 >
-                  🚀 رحلة جديدة
+                  <Rocket size={15} />
+                  <span>رحلة جديدة</span>
                 </button>
 
                 <Link
                   href="/"
-                  className="flex-1 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-xs transition-all border border-slate-700 text-center"
+                  className="flex-1 py-3 rounded-[10px] bg-[#12141C] hover:bg-[#202430] text-[#ECEEF2] font-semibold text-xs border border-[rgba(236,238,242,0.14)] flex items-center justify-center gap-1.5 transition-colors min-h-[44px]"
                 >
-                  📊 لوحة المتابعة
+                  <BarChart2 size={15} className="text-[#D4AF37]" />
+                  <span>لوحة المتابعة</span>
                 </Link>
               </div>
             </motion.div>

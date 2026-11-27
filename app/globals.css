@@ -2,101 +2,198 @@
 @import "tailwindcss";
 
 :root {
-  --font-cairo: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography Families (injected by next/font in app/layout.tsx) */
+  --font-sans-ar: 'Noto Sans Arabic', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display-ar: 'Noto Naskh Arabic', 'Noto Sans Arabic', Georgia, serif;
+  --font-display-en: 'Newsreader', Georgia, serif;
+  --font-sans-en: 'Inter', system-ui, sans-serif;
+  --font-mono-tabular: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --font-minecraft: 'Silkscreen', 'Courier New', monospace;
-  /* Cosmic Deep Space Palette: Starship Console, Deep Nebula, Zero-Glare */
-  --bg-main: #030712;
-  --bg-card: #080e1e;
-  --bg-elevated: #0e172e;
-  --border-subtle: rgba(56, 189, 248, 0.12);
-  --border-hover: rgba(56, 189, 248, 0.45);
+
+  /* Dark Academic Elite Surface Hierarchy */
+  --bg-canvas: #0A0B0E;
+  --bg-surface: #12141C;
+  --bg-elevated: #191C25;
+  --bg-interactive: #202430;
+  --bg-sunken: #07080B;
+  --bg-scrim: rgba(6, 7, 10, 0.82);
+
+  /* Ink / Text Hierarchy */
+  --text-primary: #ECEEF2;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --text-muted-safe: #7D8594;
+  --text-on-accent: #0A0B0E;
+
+  /* Restrained Burnished Gold Accent */
+  --accent-primary: #D4AF37;
+  --accent-hover: #E0C058;
+  --accent-pressed: #B89427;
+  --accent-subtle: rgba(212, 175, 55, 0.10);
+  --accent-border: rgba(212, 175, 55, 0.35);
+
+  /* Hairline Borders & Elevation Shadows */
+  --border-subtle: rgba(236, 238, 242, 0.07);
+  --border-default: rgba(236, 238, 242, 0.12);
+  --border-strong: rgba(236, 238, 242, 0.22);
+  --border-gold: rgba(212, 175, 55, 0.38);
+
+  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.60);
+  --shadow-lg: 0 20px 48px -8px rgba(0, 0, 0, 0.78);
+  --ring-focus: 0 0 0 2px #0A0B0E, 0 0 0 4px #D4AF37;
+
+  /* Legacy Variable Aliases (for zero breakage on unmigrated/studio rules) */
+  --bg-main: #0A0B0E;
+  --bg-card: #12141C;
+  --border-hover: rgba(212, 175, 55, 0.38);
 }
 
 @theme {
-  --color-brand-primary: #0ea5e9;
-  --color-brand-emerald: #10b981;
-  --color-brand-amber: #f59e0b;
-  --color-brand-sky: #38bdf8;
-  --color-brand-rose: #f43f5e;
+  --color-obsidian: #0A0B0E;
+  --color-surface: #12141C;
+  --color-elevated: #191C25;
+  --color-interactive: #202430;
+  --color-sunken: #07080B;
+  --color-gold: #D4AF37;
+  --color-gold-hover: #E0C058;
+  --color-ink-primary: #ECEEF2;
+  --color-ink-secondary: #9CA3AF;
+  --color-ink-muted: #7D8594;
+  --color-semantic-success: #4EA87E;
+  --color-semantic-warning: #C88A36;
+  --color-semantic-danger: #C95B66;
+  --color-semantic-info: #5D8AA8;
+  --color-semantic-purple: #937CB8;
+
+  --color-brand-primary: #D4AF37;
+  --color-brand-emerald: #4EA87E;
+  --color-brand-amber: #C88A36;
+  --color-brand-sky: #5D8AA8;
+  --color-brand-rose: #C95B66;
 }
 
 /* Precision Scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #262f3d; border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: #374357; }
+::-webkit-scrollbar-thumb { background: rgba(236, 238, 242, 0.14); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.35); }
 
-/* Global typography */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Base Typography & Canvas */
+html {
+  color-scheme: dark;
+  background-color: var(--bg-canvas);
+}
+
 body {
-  font-family: var(--font-cairo);
-  background-color: var(--bg-main);
-  color: #eef2f6;
+  font-family: var(--font-sans-ar), var(--font-sans-en), system-ui, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
-/* Cosmic Nebula Atmospheric Glow */
+/* Editorial Display Helper */
+.font-editorial {
+  font-family: var(--font-display-ar), var(--font-display-en), Georgia, serif;
+}
+
+.font-tabular {
+  font-family: var(--font-mono-tabular), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle Obsidian Radial Atmosphere (Zero Neon Glare) */
 .ambient-bg {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: 
-    radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.08) 0px, transparent 55%),
-    radial-gradient(at 0% 50%, rgba(99, 102, 241, 0.07) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.06) 0px, transparent 50%);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 175, 55, 0.045) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 45% at 10% 90%, rgba(93, 138, 168, 0.03) 0%, transparent 60%);
 }
 
-/* Premium Surface Panels */
-.panel {
-  background-color: var(--bg-card);
+/* Dark Academic Surface Panels */
+.aegis-panel,
+.panel,
+.glass-card {
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 1.25rem;
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow-sm);
 }
 
-.panel-elevated {
+.aegis-panel-elevated,
+.panel-elevated,
+.glass {
   background-color: var(--bg-elevated);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1.25rem;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-default);
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.panel-interactive {
-  background-color: var(--bg-card);
+.aegis-panel-interactive,
+.panel-interactive,
+.glass-interactive {
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 1.25rem;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0.75rem;
+  transition: background-color 180ms cubic-bezier(0.2, 0, 0, 1), border-color 180ms cubic-bezier(0.2, 0, 0, 1);
+  cursor: pointer;
 }
 
-.panel-interactive:hover {
-  background-color: #1a202a;
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
+.aegis-panel-interactive:hover,
+.panel-interactive:hover,
+.glass-interactive:hover {
+  background-color: var(--bg-elevated);
+  border-color: var(--border-strong);
 }
 
-/* Progress bar shimmer */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+/* Universal Keyboard Focus Visibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
 }
 
+button,
+a,
+[role="button"] {
+  cursor: pointer;
+}
+
+/* Restrained Progress Bar (Solid Mineral Fill) */
 .xp-shimmer {
-  background: linear-gradient(90deg, #059669 0%, #10b981 40%, #0ea5e9 70%, #059669 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2.5s infinite linear;
+  background: linear-gradient(90deg, #B89427 0%, #D4AF37 55%, #E0C058 100%);
 }
 
-/* Custom chart bar styling */
 .chart-bar-bg {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-sunken);
 }
 
-/* Minecraft Pixel Typography with Authentic Shadow */
+/* Minecraft Pixel Typography (Strictly scoped for Minecraft Studio Mode) */
 .font-minecraft {
   font-family: var(--font-minecraft);
   text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
   letter-spacing: 0.08em;
 }
 
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

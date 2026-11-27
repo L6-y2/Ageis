@@ -4,13 +4,12 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send,
-  Bot,
-  User,
   Loader2,
   ExternalLink,
   CheckCircle2,
   Database,
   CheckSquare,
+  ArrowLeft,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAvatars } from '@/lib/useAvatars'
@@ -93,123 +92,128 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        <AnimatePresence initial={false}>
-          {messages.map((msg, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-            >
-              {/* Avatar */}
-              <div
-                className={`w-9 h-9 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center ${
-                  msg.role === 'assistant'
-                    ? 'border border-emerald-500/40 shadow-sm bg-[#0e1217]'
-                    : 'border border-slate-700/80 bg-slate-800'
-                }`}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+        <div className="max-w-4xl mx-auto space-y-5">
+          <AnimatePresence initial={false}>
+            {messages.map((msg, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.18 }}
+                className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
               >
-                <img
-                  src={msg.role === 'assistant' ? aegisAvatar : userAvatar}
-                  alt={msg.role === 'assistant' ? 'Aegis' : 'User'}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Bubble & Action Card */}
-              <div className="flex flex-col gap-2 max-w-[82%]">
+                {/* Avatar */}
                 <div
-                  className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                  className={`w-9 h-9 rounded-[10px] shrink-0 overflow-hidden flex items-center justify-center border ${
                     msg.role === 'assistant'
-                      ? 'panel text-slate-200 border border-slate-700/60 shadow-sm'
-                      : 'bg-emerald-600 text-white shadow-md'
+                      ? 'border-[rgba(212,175,55,0.38)] bg-[#07080B]'
+                      : 'border-[rgba(236,238,242,0.14)] bg-[#191C25]'
                   }`}
                 >
-                  {msg.content}
+                  <img
+                    src={msg.role === 'assistant' ? aegisAvatar : userAvatar}
+                    alt={msg.role === 'assistant' ? 'Aegis' : 'User'}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
 
-                {/* Agentic Navigation Chip */}
-                {msg.action && msg.action.type === 'NAVIGATE' && msg.action.route && (
-                  <motion.button
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    onClick={() => router.push(msg.action!.route!)}
-                    className="flex items-center gap-2 self-start px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                {/* Bubble & Action Card */}
+                <div className="flex flex-col gap-2 max-w-[84%] sm:max-w-[75%]">
+                  <div
+                    className={`rounded-[12px] px-4 py-3 text-[15px] leading-[1.65] whitespace-pre-wrap border ${
+                      msg.role === 'assistant'
+                        ? 'bg-[#12141C] text-[#ECEEF2] border-[rgba(236,238,242,0.08)] border-r-2 border-r-[#D4AF37]'
+                        : 'bg-[#191C25] text-[#ECEEF2] border-[rgba(236,238,242,0.14)]'
+                    }`}
                   >
-                    <ExternalLink size={14} />
-                    <span>{msg.action.label}</span>
-                  </motion.button>
-                )}
+                    {msg.content}
+                  </div>
 
-                {/* Agentic Realtime Database Sync Chip */}
-                {msg.action && msg.action.type === 'DATABASE_UPDATED' && (
-                  <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="flex items-center gap-2 self-start px-3.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-xs font-medium shadow-sm"
-                  >
-                    <Database size={13} className="text-emerald-400 shrink-0" />
-                    <span>{msg.action.label || `تم تحديث قاعدة البيانات: ${msg.action.newLabel}`}</span>
-                    <CheckCircle2 size={13} className="text-emerald-400 shrink-0 ml-1" />
-                  </motion.div>
-                )}
+                  {/* Agentic Navigation Chip */}
+                  {msg.action && msg.action.type === 'NAVIGATE' && msg.action.route && (
+                    <button
+                      type="button"
+                      onClick={() => router.push(msg.action!.route!)}
+                      className="flex items-center gap-2 self-start px-3.5 py-2 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] text-[#0A0B0E] text-xs font-semibold transition-colors min-h-[40px]"
+                    >
+                      <ExternalLink size={14} />
+                      <span>{msg.action.label}</span>
+                    </button>
+                  )}
 
-                {/* Agentic Automatic Task Creation Chip */}
-                {msg.action && msg.action.type === 'TASK_CREATED' && (
-                  <motion.button
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    onClick={() => router.push(msg.action?.route || '/tasks')}
-                    className="flex items-center gap-2 self-start px-3.5 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-md hover:bg-emerald-500/25 active:scale-95 transition-all"
-                  >
-                    <CheckSquare size={14} className="text-emerald-400 shrink-0" />
-                    <span>{msg.action.label || 'تمت إضافة المهمة بنجاح'}</span>
-                    <span className="text-[10px] text-emerald-400/90 underline font-normal mr-1.5">عرض في جدول المهام ➔</span>
-                  </motion.button>
-                )}
+                  {/* Agentic Realtime Database Sync Chip */}
+                  {msg.action && msg.action.type === 'DATABASE_UPDATED' && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className="flex items-center gap-2 self-start px-3.5 py-2 rounded-[10px] bg-[rgba(78,168,126,0.10)] border border-[rgba(78,168,126,0.32)] text-[#4EA87E] text-xs font-semibold"
+                    >
+                      <Database size={13} className="shrink-0" />
+                      <span>{msg.action.label || `تم تحديث قاعدة البيانات: ${msg.action.newLabel}`}</span>
+                      <CheckCircle2 size={14} className="shrink-0" />
+                    </div>
+                  )}
+
+                  {/* Agentic Automatic Task Creation Chip */}
+                  {msg.action && msg.action.type === 'TASK_CREATED' && (
+                    <button
+                      type="button"
+                      onClick={() => router.push(msg.action?.route || '/tasks')}
+                      className="flex items-center gap-2 self-start px-3.5 py-2.5 rounded-[10px] bg-[rgba(78,168,126,0.10)] hover:bg-[rgba(78,168,126,0.18)] border border-[rgba(78,168,126,0.32)] text-[#4EA87E] text-xs font-semibold transition-colors min-h-[40px]"
+                    >
+                      <CheckSquare size={14} className="shrink-0" />
+                      <span>{msg.action.label || 'تمت إضافة المهمة بنجاح'}</span>
+                      <span className="text-[11px] text-[#ECEEF2] inline-flex items-center gap-1 mr-1">
+                        <span>عرض في المهام</span>
+                        <ArrowLeft size={12} />
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {loading && (
+            <div role="status" aria-live="polite" className="flex gap-3">
+              <div className="w-9 h-9 rounded-[10px] overflow-hidden shrink-0 border border-[rgba(212,175,55,0.38)] bg-[#07080B]">
+                <img src={aegisAvatar} alt="Aegis" className="w-full h-full object-cover" />
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex gap-3"
-          >
-            <div className="w-9 h-9 rounded-2xl overflow-hidden flex-shrink-0 border border-emerald-500/40 bg-[#0e1217]">
-              <img src={aegisAvatar} alt="Aegis" className="w-full h-full object-cover" />
+              <div className="bg-[#12141C] rounded-[12px] px-4 py-3 flex items-center gap-2.5 border border-[rgba(236,238,242,0.08)]">
+                <Loader2 size={15} className="text-[#D4AF37] animate-spin" />
+                <span className="text-xs text-[#9CA3AF]">إيجيس يحلل وينفذ...</span>
+              </div>
             </div>
-            <div className="panel rounded-2xl px-4 py-3 flex items-center gap-2 border border-slate-700/60">
-              <Loader2 size={16} className="text-emerald-400 animate-spin" />
-              <span className="text-sm text-slate-400">إيجيس يحلل وينفذ...</span>
-            </div>
-          </motion.div>
-        )}
+          )}
 
-        <div ref={bottomRef} />
+          <div ref={bottomRef} />
+        </div>
       </div>
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-slate-800/80 bg-[#141922] flex gap-3">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="اسأل إيجيس، اطلب تعديل مستوى درس، أو ضيف واجب ومهمة جديدة..."
-          className="flex-1 bg-slate-900/80 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-emerald-500 transition-colors"
-          dir="auto"
-        />
-        <button
-          onClick={sendMessage}
-          disabled={!input.trim() || loading}
-          className="w-12 h-12 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 rounded-2xl flex items-center justify-center text-white transition-all shadow-md active:scale-95"
-        >
-          <Send size={18} />
-        </button>
+      {/* Input Composer Dock */}
+      <div className="border-t border-[rgba(236,238,242,0.08)] bg-[#0D0F15] px-4 sm:px-6 py-3">
+        <div className="max-w-4xl mx-auto flex gap-2.5 items-center">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            placeholder="اسأل إيجيس، اطلب تعديل مستوى درس، أو ضيف مهمة جديدة..."
+            aria-label="رسالة إلى إيجيس"
+            className="flex-1 bg-[#07080B] border border-[rgba(236,238,242,0.12)] rounded-[10px] px-4 h-11 text-sm text-[#ECEEF2] placeholder-[#6B7280] focus:border-[#D4AF37] transition-colors"
+            dir="auto"
+          />
+          <button
+            type="button"
+            onClick={sendMessage}
+            disabled={!input.trim() || loading}
+            aria-label="إرسال الرسالة"
+            className="w-11 h-11 bg-[#D4AF37] hover:bg-[#E0C058] disabled:bg-[#191C25] disabled:text-[#6B7280] disabled:border disabled:border-[rgba(236,238,242,0.08)] rounded-[10px] flex items-center justify-center text-[#0A0B0E] transition-colors shrink-0"
+          >
+            <Send size={17} />
+          </button>
+        </div>
       </div>
     </div>
   )

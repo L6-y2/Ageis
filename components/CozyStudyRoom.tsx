@@ -46,8 +46,17 @@ export default function CozyStudyRoom({
           {/* ─── 1. Fireplace Warm Glow & Rising Sparks ───────────────────── */}
           {fireActive && (
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="تبديل صوت المدفأة"
               onClick={onToggleFire}
-              className="absolute cursor-pointer transition-opacity duration-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onToggleFire?.()
+                }
+              }}
+              className="absolute cursor-pointer transition-opacity duration-500 rounded-full"
               style={{
                 left: '3.4%',
                 top: '57.3%',
@@ -82,8 +91,17 @@ export default function CozyStudyRoom({
 
           {/* ─── 2. Window Rain Streaks Overlay ───────────────────────────── */}
           <div
+            role="button"
+            tabIndex={0}
+            aria-label="تبديل صوت المطر"
             onClick={onToggleRain}
-            className="absolute cursor-pointer"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onToggleRain?.()
+              }
+            }}
+            className="absolute cursor-pointer rounded-[8px]"
             style={{
               left: '15.3%',
               top: '30.8%',
@@ -158,15 +176,17 @@ export default function CozyStudyRoom({
 
           {/* ─── 5. Sleeping Cat Hotspot (Click to Pet & Purr) ─────────────── */}
           <button
+            type="button"
             onClick={onPetCat}
-            className="absolute cursor-pointer transition-transform active:scale-90 focus:outline-none"
+            aria-label="مداعبة القطة النائمة"
+            className="absolute cursor-pointer transition-transform active:scale-95 rounded-full"
             style={{
               left: '32.2%',
               top: '70.6%',
               width: '20.3%',
               height: '10.8%',
             }}
-            title="انقر لمداعبة القطة النائمة 🐱"
+            title="انقر لمداعبة القطة النائمة"
           >
             {/* Subtle breathing animation ring */}
             <motion.div

@@ -1,38 +1,38 @@
 import BottomNav from '@/components/BottomNav'
 import ChatInterface from '@/components/ChatInterface'
-import { Sparkles } from 'lucide-react'
 
 export default function ChatPage() {
   return (
-    <main className="flex flex-col h-screen pb-16">
+    <main className="flex flex-col h-[100dvh] pb-16 lg:pb-0 lg:pr-60 bg-[#0A0B0E]">
       {/* Header */}
-      <div className="px-4 pt-10 pb-3 border-b border-slate-800/80 bg-[#090d16]/80 backdrop-blur-xl flex-shrink-0 z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl p-0.5 bg-gradient-to-tr from-indigo-500 via-cyan-400 to-amber-400 shadow-lg shadow-indigo-500/20">
-              <div className="w-full h-full rounded-[14px] overflow-hidden bg-slate-950 flex items-center justify-center">
-                <img
-                  src="/aegis-avatar.jpg"
-                  alt="Aegis AI"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      <header className="border-b border-[rgba(236,238,242,0.08)] bg-[#0D0F15] flex-shrink-0 z-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-[10px] p-0.5 bg-[#07080B] border border-[rgba(212,175,55,0.40)] overflow-hidden shrink-0">
+              <img
+                src="/aegis-avatar.jpg"
+                alt="Aegis AI"
+                className="w-full h-full object-cover rounded-[8px]"
+              />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-white text-base">إيجيس AI</h1>
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
-                  Copilot
+              <div className="flex items-center gap-2">
+                <h1 className="font-bold text-[#ECEEF2] text-base">إيجيس الذكي</h1>
+                <span
+                  dir="ltr"
+                  className="px-2 py-0.5 rounded-[6px] text-[10px] font-semibold bg-[rgba(212,175,55,0.10)] text-[#D4AF37] border border-[rgba(212,175,55,0.28)]"
+                >
+                  AI Counsel
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                متصل وجاهز لمساعدتك
+              <p className="text-[11px] text-[#4EA87E] flex items-center gap-1.5 font-medium mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4EA87E] inline-block" />
+                <span>متصل ومربوط بقاعدة البيانات</span>
               </p>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Chat Area */}
       <div className="flex-1 overflow-hidden">

@@ -4,7 +4,7 @@ export const revalidate = 30
 import BottomNav from '@/components/BottomNav'
 import SubjectCard from '@/components/SubjectCard'
 import { SUBJECTS } from '@/lib/types'
-import { BookOpen, Sparkles, CheckCircle2 } from 'lucide-react'
+import { BookOpen, CheckCircle2 } from 'lucide-react'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://crbfhqpklruvbgcanuoo.supabase.co'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYmZocXBrbHJ1dmJnY2FudW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0Mjc4NTcsImV4cCI6MjEwOTAwMzg1N30.W8YLY_kiGqHvLs5LFDxHP0goL0vRJ18HtzdPLa0mXjY'
@@ -43,41 +43,50 @@ export default async function CurriculumPage() {
   const summaries = await getAllSummaries()
   const totalLessons = summaries.reduce((acc, s) => acc + s.total, 0)
   const totalMastered = summaries.reduce((acc, s) => acc + s.mastered, 0)
+  const overallPct = totalLessons ? Math.round((totalMastered / totalLessons) * 100) : 0
 
   return (
-    <main className="min-h-screen pb-28 pt-8 px-4 sm:px-6">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 border border-indigo-500/30">
-              <BookOpen size={22} />
+    <main className="min-h-screen lg:pr-60">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 lg:pt-8 pb-24 lg:pb-10">
+        {/* Header */}
+        <header className="flex flex-wrap items-center justify-between gap-4 mb-7 pb-5 border-b border-[rgba(236,238,242,0.07)]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-[10px] bg-[#191C25] border border-[rgba(212,175,55,0.32)] flex items-center justify-center text-[#D4AF37]">
+              <BookOpen size={20} strokeWidth={1.75} />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white">شجرة المناهج</h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {`${totalLessons} درساً عبر 4 مواد رئيسية`}
+              <h1 className="text-xl sm:text-2xl font-bold text-[#ECEEF2]">شجرة المناهج</h1>
+              <p className="text-xs text-[#9CA3AF] mt-0.5">
+                <span dir="ltr" className="font-tabular text-[#ECEEF2]">{totalLessons}</span> درساً موزعة عبر 4 مواد رئيسية
               </p>
             </div>
           </div>
-          <div className="text-left px-3 py-1.5 rounded-xl glass-card border border-emerald-500/30">
-            <span className="block text-xs font-black text-emerald-400">{`${totalMastered} متقن`}</span>
-            <span className="text-[10px] text-slate-400">إجمالي</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Cards list */}
-      <div className="space-y-3.5">
-        {summaries.map((s: any) => (
-          <SubjectCard
-            key={s.subjectId}
-            subjectId={s.subjectId}
-            mastered={s.mastered}
-            total={s.total}
-            percentage={s.percentage}
-          />
-        ))}
+          <div className="flex items-center gap-3 px-4 py-2 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.08)]">
+            <CheckCircle2 size={16} strokeWidth={1.75} className="text-[#4EA87E]" />
+            <div>
+              <span className="block text-xs font-bold text-[#ECEEF2] font-tabular">
+                <span dir="ltr">{totalMastered}</span> متقن
+              </span>
+              <span className="block text-[10px] text-[#7D8594] font-tabular">
+                إجمالي الإنجاز <span dir="ltr">{overallPct}%</span>
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* 2x2 Editorial Subject Folio Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {summaries.map((s: any) => (
+            <SubjectCard
+              key={s.subjectId}
+              subjectId={s.subjectId}
+              mastered={s.mastered}
+              total={s.total}
+              percentage={s.percentage}
+            />
+          ))}
+        </div>
       </div>
 
       <BottomNav />

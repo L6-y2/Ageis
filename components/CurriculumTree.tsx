@@ -16,12 +16,13 @@ import {
   AlertCircle,
   HelpCircle,
   Loader2,
-  Bookmark,
   FileText,
   Layers,
+  RotateCcw,
 } from 'lucide-react'
 import type { RpcMasteryReport, ChapterData, TopicData } from '@/lib/types'
 import ConstellationTree from '@/components/ConstellationTree'
+import { getSubjectTheme } from '@/components/AcademicIcons'
 
 interface Props {
   report: RpcMasteryReport
@@ -80,9 +81,9 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
 
   if (!subject?.chapters?.length) {
     return (
-      <div className="panel p-12 text-center text-slate-500">
-        <BookOpen size={40} className="mx-auto text-slate-600 mb-3" />
-        <p className="text-sm font-bold text-slate-400">لا توجد دروس متاحة حالياً لهذه المادة</p>
+      <div className="aegis-panel p-12 text-center text-[#7D8594]">
+        <BookOpen size={36} strokeWidth={1.5} className="mx-auto text-[#6B7280] mb-3" />
+        <p className="text-sm font-semibold text-[#9CA3AF]">لا توجد دروس متاحة حالياً لهذه المادة</p>
       </div>
     )
   }
@@ -98,15 +99,14 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
       })
       const data = await res.json()
       if (data.success) {
-        // Trigger celebratory confetti on reaching full mastery (Level 5)
         if (level === 5) {
           try {
             const confetti = (await import('canvas-confetti')).default
             confetti({
-              particleCount: 100,
-              spread: 70,
+              particleCount: 80,
+              spread: 65,
               origin: { y: 0.6 },
-              colors: ['#facc15', '#38bdf8', '#a855f7', '#10b981'],
+              colors: ['#D4AF37', '#4EA87E', '#ECEEF2', '#C88A36'],
             })
           } catch {}
         }
@@ -141,10 +141,10 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
           try {
             const confetti = (await import('canvas-confetti')).default
             confetti({
-              particleCount: 90,
+              particleCount: 70,
               spread: 60,
               origin: { y: 0.6 },
-              colors: ['#facc15', '#38bdf8', '#10b981'],
+              colors: ['#D4AF37', '#4EA87E', '#ECEEF2'],
             })
           } catch {}
         }
@@ -165,131 +165,139 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
     }
   }
 
+  const subjectTheme = getSubjectTheme(subject.subject_id)
+
   return (
     <div className="space-y-4">
       {/* ─── View Switcher Segmented Bar ─────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 rounded-[12px] bg-[#12141C] border border-[rgba(236,238,242,0.08)]">
+        <div className="flex items-center gap-1.5 p-0.5 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.06)]">
           <button
+            type="button"
             onClick={() => handleToggleViewMode('list')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-xs font-semibold transition-colors min-h-[38px] ${
               viewMode === 'list'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(212,175,55,0.32)]'
+                : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
             }`}
           >
-            <Layers size={13} />
+            <Layers size={14} className={viewMode === 'list' ? 'text-[#D4AF37]' : ''} />
             <span>قائمة الفصول</span>
           </button>
 
           <button
+            type="button"
             onClick={() => handleToggleViewMode('constellation')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-xs font-semibold transition-colors min-h-[38px] ${
               viewMode === 'constellation'
-                ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white shadow-lg shadow-indigo-600/30 ring-1 ring-white/20'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(212,175,55,0.32)]'
+                : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
             }`}
           >
-            <Sparkles size={13} className="text-amber-300 animate-pulse" />
-            <span>كوكبة النجوم 🌌</span>
+            <Sparkles size={14} className={viewMode === 'constellation' ? 'text-[#D4AF37]' : ''} />
+            <span>الخريطة الفلكية</span>
           </button>
         </div>
 
-        <div className="text-[11px] font-bold text-slate-400 px-2 flex items-center gap-1.5">
-          {viewMode === 'constellation' ? (
-            <span className="text-indigo-300 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>خريطة المنهج الفلكية</span>
-            </span>
-          ) : (
-            <span className="text-slate-400">التسلسل المنهجي الزمني</span>
-          )}
-        </div>
+        <span className="text-[11px] font-medium text-[#7D8594] px-2.5">
+          {viewMode === 'constellation' ? 'تمثيل فلكي لمستويات الإتقان' : 'التسلسل المنهجي حسب الكتاب'}
+        </span>
       </div>
 
       {/* ─── Search & Status Filters ──────────────────────────────────── */}
       <div className="space-y-3">
-        {/* Search Input */}
         <div className="relative">
-          <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#7D8594] pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن أي درس أو مفهوم في الكوكبة..."
-            className="w-full bg-[#111624] border border-slate-800 rounded-2xl pr-10 pl-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500/80 transition-all"
+            placeholder="ابحث عن أي درس أو مفهوم في المنهج..."
+            aria-label="بحث في دروس المادة"
+            className="w-full bg-[#07080B] border border-[rgba(236,238,242,0.12)] rounded-[10px] pr-10 pl-10 h-11 text-sm text-[#ECEEF2] placeholder-[#6B7280] focus:border-[#D4AF37] transition-colors"
             dir="auto"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              aria-label="مسح البحث"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-[8px] flex items-center justify-center text-[#7D8594] hover:text-[#ECEEF2]"
             >
-              <X size={14} />
+              <X size={15} />
             </button>
           )}
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           <button
+            type="button"
             onClick={() => setActiveFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap min-h-[40px] border ${
               activeFilter === 'all'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'panel text-slate-400 hover:text-slate-200'
+                ? 'bg-[rgba(212,175,55,0.12)] border-[rgba(212,175,55,0.38)] text-[#ECEEF2]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
             }`}
           >
-            {`الكل (${counts.all})`}
+            الكل (<span dir="ltr" className="font-tabular">{counts.all}</span>)
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveFilter('mastered')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 min-h-[40px] border ${
               activeFilter === 'mastered'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                : 'panel text-emerald-400/80 hover:text-emerald-300'
+                ? 'bg-[rgba(78,168,126,0.14)] border-[rgba(78,168,126,0.40)] text-[#4EA87E]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#4EA87E]'
             }`}
           >
             <CheckCircle2 size={13} />
-            {`متقن (${counts.mastered})`}
+            <span>متقن (<span dir="ltr" className="font-tabular">{counts.mastered}</span>)</span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveFilter('reviewing')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 min-h-[40px] border ${
               activeFilter === 'reviewing'
-                ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-                : 'panel text-amber-400/80 hover:text-amber-300'
+                ? 'bg-[rgba(200,138,54,0.14)] border-[rgba(200,138,54,0.40)] text-[#C88A36]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#C88A36]'
             }`}
           >
             <Clock size={13} />
-            {`تحت المراجعة (${counts.reviewing})`}
+            <span>تحت المراجعة (<span dir="ltr" className="font-tabular">{counts.reviewing}</span>)</span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveFilter('read')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 min-h-[40px] border ${
               activeFilter === 'read'
-                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
-                : 'panel text-sky-400/80 hover:text-sky-300'
+                ? 'bg-[rgba(93,138,168,0.14)] border-[rgba(93,138,168,0.40)] text-[#5D8AA8]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#5D8AA8]'
             }`}
           >
             <BookOpen size={13} />
-            {`تمت القراءة والتلخيص (${counts.read})`}
+            <span>القراءة والتلخيص (<span dir="ltr" className="font-tabular">{counts.read}</span>)</span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveFilter('not_started')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 min-h-[40px] border ${
               activeFilter === 'not_started'
-                ? 'bg-slate-700 text-white shadow-md shadow-slate-700/30'
-                : 'panel text-slate-400 hover:text-slate-200'
+                ? 'bg-[#191C25] border-[rgba(236,238,242,0.28)] text-[#ECEEF2]'
+                : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
             }`}
           >
-            <Circle size={13} />
-            {`لم يبدأ (${counts.not_started})`}
+            <Circle size={12} />
+            <span>لم يبدأ (<span dir="ltr" className="font-tabular">{counts.not_started}</span>)</span>
           </button>
         </div>
       </div>
 
-      {/* ─── Constellation View Mode ──────────────────────────────────── */}
+      {/* ─── Constellation View Mode vs Chapters List ─────────────────── */}
       {viewMode === 'constellation' ? (
         <ConstellationTree
           subject={subject}
@@ -300,7 +308,6 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
           activeFilter={activeFilter}
         />
       ) : (
-        /* ─── Standard Timeline Chapters List ────────────────────────── */
         <div className="space-y-4">
           {[...subject.chapters]
             .sort((a, b) => (a.chapter_num ?? 0) - (b.chapter_num ?? 0))
@@ -327,7 +334,7 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
                   key={chapter.chapter_id}
                   chapter={chapter}
                   topics={filteredTopics}
-                  color={subjectColor}
+                  theme={subjectTheme}
                   localTopics={localTopics}
                   onSelectTopic={(t) => setSelectedTopic(t)}
                 />
@@ -339,51 +346,63 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
       {/* ─── Topic Mastery Stage & SM-2 Modal ──────────────────────────────── */}
       <AnimatePresence>
         {selectedTopic && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[rgba(6,7,10,0.82)] backdrop-blur-md">
             <motion.div
-              initial={{ y: '100%', opacity: 0 }}
+              initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="w-full max-w-lg bg-[#0e1424] border border-slate-800 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl relative"
+              exit={{ y: 24, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="topic-modal-title"
+              className="w-full max-w-lg bg-[#191C25] border border-[rgba(236,238,242,0.14)] rounded-t-[18px] sm:rounded-[16px] p-5 sm:p-6 shadow-[0_20px_48px_-8px_rgba(0,0,0,0.8)] relative"
             >
+              {/* Mobile Sheet Handle */}
+              <div className="sm:hidden w-10 h-1 rounded-full bg-[rgba(236,238,242,0.18)] mx-auto mb-3" />
+
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
-                    <Sparkles size={18} />
+              <div className="flex items-start justify-between gap-3 pb-4 border-b border-[rgba(236,238,242,0.08)]">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-[10px] bg-[rgba(212,175,55,0.10)] border border-[rgba(212,175,55,0.3)] text-[#D4AF37] flex items-center justify-center shrink-0">
+                    <Sparkles size={17} strokeWidth={1.75} />
                   </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold">تحديد مستوى استيعاب الدرس</span>
-                    <h3 className="text-sm font-black text-white">{selectedTopic.topic}</h3>
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-[#7D8594] font-medium block">تحديث حالة الدرس</span>
+                    <h3 id="topic-modal-title" className="text-sm sm:text-base font-bold text-[#ECEEF2] truncate">
+                      {selectedTopic.topic}
+                    </h3>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedTopic(null)}
-                  className="p-1.5 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white"
+                  aria-label="إغلاق النافذة"
+                  className="w-9 h-9 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2] flex items-center justify-center shrink-0 transition-colors"
                 >
                   <X size={16} />
                 </button>
               </div>
 
               {/* Mode Toggle Tabs */}
-              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900 rounded-xl my-3">
+              <div className="grid grid-cols-2 gap-1 p-1 bg-[#07080B] border border-[rgba(236,238,242,0.07)] rounded-[10px] my-4">
                 <button
+                  type="button"
                   onClick={() => setActiveModalTab('stages')}
-                  className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`py-2 px-2 rounded-[8px] text-xs font-semibold transition-colors min-h-[38px] ${
                     activeModalTab === 'stages'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(212,175,55,0.32)]'
+                      : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
                   }`}
                 >
                   المراحل الدراسية الخمسة
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveModalTab('sm2')}
-                  className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`py-2 px-2 rounded-[8px] text-xs font-semibold transition-colors min-h-[38px] ${
                     activeModalTab === 'sm2'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(212,175,55,0.32)]'
+                      : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
                   }`}
                 >
                   تقييم التكرار الذكي (SM-2)
@@ -393,76 +412,81 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
               {/* TAB 1: 5 Direct Mastery Stages */}
               {activeModalTab === 'stages' && (
                 <div className="space-y-2">
-                  <p className="text-[11px] text-slate-400 mb-2">
-                    اختر مرحلة استيعابك الحالية للدرس ليتم تحديث نسب المواد فوراً:
+                  <p className="text-xs text-[#9CA3AF] mb-2.5">
+                    اختر مرحلة الاستيعاب الحالية لتحديث نسبة الإتقان في المنهج:
                   </p>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleSetStage(selectedTopic.id, 5)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs transition-all active:scale-[0.98]"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(78,168,126,0.10)] hover:bg-[rgba(78,168,126,0.16)] border border-[rgba(78,168,126,0.30)] text-[#4EA87E] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-emerald-400" />
-                      <span>🌟 متقن تماماً (المستوى 5)</span>
+                    <span className="flex items-center gap-2.5">
+                      <CheckCircle2 size={16} />
+                      <span>متقن تماماً (المستوى 5)</span>
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">
-                      إتقان 100%
+                    <span dir="ltr" className="text-[11px] px-2 py-0.5 rounded-[6px] bg-[rgba(78,168,126,0.15)] font-tabular">
+                      100%
                     </span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleSetStage(selectedTopic.id, 4)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs transition-all active:scale-[0.98]"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(200,138,54,0.10)] hover:bg-[rgba(200,138,54,0.16)] border border-[rgba(200,138,54,0.30)] text-[#C88A36] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <Clock size={16} className="text-amber-400" />
-                      <span>⏳ تحت المراجعة (المستوى 4)</span>
+                    <span className="flex items-center gap-2.5">
+                      <Clock size={16} />
+                      <span>تحت المراجعة (المستوى 4)</span>
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
+                    <span className="text-[11px] px-2 py-0.5 rounded-[6px] bg-[rgba(200,138,54,0.15)]">
                       جاهز للاختبار
                     </span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleSetStage(selectedTopic.id, 2)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 font-bold text-xs transition-all active:scale-[0.98]"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(93,138,168,0.10)] hover:bg-[rgba(93,138,168,0.16)] border border-[rgba(93,138,168,0.30)] text-[#5D8AA8] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <FileText size={16} className="text-sky-400" />
-                      <span>✍️ تم التلخيص وحل التمارين (المستوى 2)</span>
+                    <span className="flex items-center gap-2.5">
+                      <FileText size={16} />
+                      <span>تم التلخيص وحل التمارين (المستوى 2)</span>
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-mono">
+                    <span className="text-[11px] px-2 py-0.5 rounded-[6px] bg-[rgba(93,138,168,0.15)]">
                       تطبيق عملي
                     </span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleSetStage(selectedTopic.id, 1)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-xs transition-all active:scale-[0.98]"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(147,124,184,0.10)] hover:bg-[rgba(147,124,184,0.16)] border border-[rgba(147,124,184,0.30)] text-[#937CB8] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <BookOpen size={16} className="text-purple-400" />
-                      <span>📖 تمت القراءة والفهم الأولي (المستوى 1)</span>
+                    <span className="flex items-center gap-2.5">
+                      <BookOpen size={16} />
+                      <span>تمت القراءة والفهم الأولي (المستوى 1)</span>
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+                    <span className="text-[11px] px-2 py-0.5 rounded-[6px] bg-[rgba(147,124,184,0.15)]">
                       مقدمة
                     </span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleSetStage(selectedTopic.id, 0)}
-                    className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-slate-400 font-bold text-xs transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-[10px] bg-[#12141C] hover:bg-[#202430] border border-[rgba(236,238,242,0.10)] text-[#9CA3AF] font-semibold text-xs transition-colors min-h-[44px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <Circle size={15} />
-                      <span>⚪ لم يبدأ بعد (المستوى 0)</span>
+                    <span className="flex items-center gap-2.5">
+                      <RotateCcw size={14} />
+                      <span>لم يبدأ بعد (المستوى 0)</span>
                     </span>
-                    <span className="text-[10px]">إعادة ضبط</span>
+                    <span className="text-[11px] text-[#7D8594]">إعادة ضبط</span>
                   </button>
                 </div>
               )}
@@ -470,62 +494,70 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
               {/* TAB 2: SM-2 Algorithm Rating */}
               {activeModalTab === 'sm2' && (
                 <div className="space-y-2">
-                  <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
-                    قيم استرجاعك للمعلومة لحساب موعد التكرار المتباعد القادم رياضياً:
+                  <p className="text-xs text-[#9CA3AF] mb-2.5 leading-relaxed">
+                    قيّم مدى استرجاعك للدرس لحساب موعد المراجعة القادم وفق خوارزمية SM-2:
                   </p>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleRateTopic(selectedTopic.id, 5)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs transition-all"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(78,168,126,0.10)] hover:bg-[rgba(78,168,126,0.16)] border border-[rgba(78,168,126,0.30)] text-[#4EA87E] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-emerald-400" />
+                    <span className="flex items-center gap-2.5">
+                      <CheckCircle2 size={16} />
                       <span>متقن وسهل جداً (درجة 5)</span>
                     </span>
-                    <span className="text-[10px] text-emerald-300 font-mono">+XP ممتد</span>
+                    <span className="text-[11px] font-tabular">+XP ممتد</span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleRateTopic(selectedTopic.id, 4)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-300 font-bold text-xs transition-all"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(93,138,168,0.10)] hover:bg-[rgba(93,138,168,0.16)] border border-[rgba(93,138,168,0.30)] text-[#5D8AA8] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <Check size={16} className="text-teal-400" />
+                    <span className="flex items-center gap-2.5">
+                      <Check size={16} />
                       <span>فهم جيد مع تردد بسيط (درجة 4)</span>
                     </span>
-                    <span className="text-[10px] text-teal-300 font-mono">مراجعة عادية</span>
+                    <span className="text-[11px]">مراجعة عادية</span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleRateTopic(selectedTopic.id, 3)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs transition-all"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(200,138,54,0.10)] hover:bg-[rgba(200,138,54,0.16)] border border-[rgba(200,138,54,0.30)] text-[#C88A36] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <AlertCircle size={16} className="text-amber-400" />
+                    <span className="flex items-center gap-2.5">
+                      <AlertCircle size={16} />
                       <span>صحيح ولكن بصعوبة (درجة 3)</span>
                     </span>
-                    <span className="text-[10px] text-amber-300 font-mono">مراجعة قريبة</span>
+                    <span className="text-[11px]">مراجعة قريبة</span>
                   </button>
 
                   <button
+                    type="button"
                     disabled={isSubmitting}
                     onClick={() => handleRateTopic(selectedTopic.id, 1)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs transition-all"
+                    className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(201,91,102,0.10)] hover:bg-[rgba(201,91,102,0.16)] border border-[rgba(201,91,102,0.30)] text-[#E58992] font-semibold text-xs transition-colors min-h-[46px]"
                   >
-                    <span className="flex items-center gap-2">
-                      <HelpCircle size={16} className="text-rose-400" />
+                    <span className="flex items-center gap-2.5">
+                      <HelpCircle size={16} />
                       <span>نسيان تام أو خطأ (درجة 1)</span>
                     </span>
-                    <span className="text-[10px] text-rose-300 font-mono">إعادة غداً</span>
+                    <span className="text-[11px]">إعادة غداً</span>
                   </button>
                 </div>
               )}
 
               {isSubmitting && (
-                <div className="absolute inset-0 bg-slate-950/85 rounded-3xl flex items-center justify-center gap-2 text-indigo-400 text-xs font-bold">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="absolute inset-0 bg-[#0A0B0E]/85 rounded-t-[18px] sm:rounded-[16px] flex items-center justify-center gap-2.5 text-[#D4AF37] text-xs font-semibold"
+                >
                   <Loader2 size={18} className="animate-spin" />
                   <span>جاري تحديث قاعدة البيانات...</span>
                 </div>
@@ -541,13 +573,13 @@ export default function CurriculumTree({ report, subjectColor }: Props) {
 function ChapterBlock({
   chapter,
   topics,
-  color,
+  theme,
   localTopics,
   onSelectTopic,
 }: {
   chapter: ChapterData
   topics: TopicData[]
-  color: string
+  theme: ReturnType<typeof getSubjectTheme>
   localTopics: Record<number, Partial<TopicData>>
   onSelectTopic: (topic: TopicData) => void
 }) {
@@ -561,49 +593,57 @@ function ChapterBlock({
   const chapterPct = topics.length ? Math.round((masteredCount / topics.length) * 100) : 0
 
   return (
-    <div className="panel overflow-hidden border-slate-800">
+    <section className="aegis-panel overflow-hidden">
       {/* Chapter Milestone Header */}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-4 sm:p-5 text-right transition-colors hover:bg-slate-800/30"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between p-4 sm:p-5 text-right transition-colors hover:bg-[#191C25]"
       >
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center text-white shadow-md flex-shrink-0`}>
-            <BookOpen size={18} />
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className={`w-10 h-10 rounded-[10px] ${theme.bgSubtle} border ${theme.border} flex items-center justify-center shrink-0`}>
+            <BookOpen size={18} strokeWidth={1.75} className={theme.text} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400">الفصل {chapter.chapter_num}</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
-                {`${masteredCount}/${topics.length} متقن`}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-semibold text-[#7D8594]">
+                الفصل <span dir="ltr" className="font-tabular">{chapter.chapter_num}</span>
+              </span>
+              <span className="text-[10px] font-tabular px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                <span dir="ltr">{masteredCount}/{topics.length}</span> متقن
               </span>
             </div>
-            <h3 className="font-bold text-slate-100 text-sm sm:text-base mt-0.5">{chapter.chapter_name}</h3>
+            <h2 className="font-semibold text-[#ECEEF2] text-sm sm:text-base mt-0.5 truncate">
+              {chapter.chapter_name}
+            </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-black text-slate-300 font-mono">{`${chapterPct}%`}</span>
-          <div className="w-6 h-6 rounded-full bg-slate-850 flex items-center justify-center text-slate-400">
+        <div className="flex items-center gap-3 shrink-0">
+          <span dir="ltr" className="text-xs font-bold text-[#ECEEF2] font-tabular">
+            {chapterPct}%
+          </span>
+          <div className="w-8 h-8 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] flex items-center justify-center text-[#9CA3AF]">
             <ChevronDown
               size={16}
-              className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+              className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
             />
           </div>
         </div>
       </button>
 
-      {/* Topics Timeline Node View */}
+      {/* Topics Editorial Index */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="overflow-hidden"
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden border-t border-[rgba(236,238,242,0.07)]"
           >
-            <div className="px-3 pb-4 pt-1 space-y-2">
+            <div className="divide-y divide-[rgba(236,238,242,0.06)]">
               {topics.map((t, index) => {
                 const currentLevel = localTopics[t.id]?.mastery_level ?? t.mastery_level
                 const nextReview = localTopics[t.id]?.next_review ?? t.next_review
@@ -623,7 +663,7 @@ function ChapterBlock({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </section>
   )
 }
 
@@ -640,44 +680,46 @@ function TopicNode({
   index: number
   onOpenRate: () => void
 }) {
+  void index
+
   const getStageConfig = (lvl: number) => {
     if (lvl >= 5) {
       return {
-        label: 'متقن تماماً 🌟',
-        badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+        label: 'متقن تماماً',
+        badgeClass: 'bg-[rgba(78,168,126,0.12)] text-[#4EA87E] border-[rgba(78,168,126,0.30)]',
         icon: CheckCircle2,
-        iconColor: 'text-emerald-400',
+        iconColor: 'text-[#4EA87E]',
       }
     }
     if (lvl === 4) {
       return {
-        label: 'تحت المراجعة ⏳',
-        badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+        label: 'تحت المراجعة',
+        badgeClass: 'bg-[rgba(200,138,54,0.12)] text-[#C88A36] border-[rgba(200,138,54,0.30)]',
         icon: Clock,
-        iconColor: 'text-amber-400',
+        iconColor: 'text-[#C88A36]',
       }
     }
     if (lvl === 2 || lvl === 3) {
       return {
-        label: 'تم التلخيص ✍️',
-        badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+        label: 'تم التلخيص',
+        badgeClass: 'bg-[rgba(93,138,168,0.12)] text-[#5D8AA8] border-[rgba(93,138,168,0.30)]',
         icon: FileText,
-        iconColor: 'text-sky-400',
+        iconColor: 'text-[#5D8AA8]',
       }
     }
     if (lvl === 1) {
       return {
-        label: 'تمت القراءة 📖',
-        badgeClass: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+        label: 'تمت القراءة',
+        badgeClass: 'bg-[rgba(147,124,184,0.12)] text-[#937CB8] border-[rgba(147,124,184,0.30)]',
         icon: BookOpen,
-        iconColor: 'text-purple-400',
+        iconColor: 'text-[#937CB8]',
       }
     }
     return {
-      label: 'لم يبدأ بعد',
-      badgeClass: 'bg-slate-800 text-slate-400 border-slate-700/60',
+      label: 'لم يبدأ',
+      badgeClass: 'bg-[#07080B] text-[#7D8594] border-[rgba(236,238,242,0.08)]',
       icon: Circle,
-      iconColor: 'text-slate-600',
+      iconColor: 'text-[#6B7280]',
     }
   }
 
@@ -685,24 +727,27 @@ function TopicNode({
   const Icon = currentStage.icon
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onOpenRate}
-      className="panel-interactive rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer group"
+      className="w-full text-right px-4 sm:px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#191C25] transition-colors group min-h-[56px]"
     >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-8 h-8 rounded-xl bg-slate-900/90 flex items-center justify-center flex-shrink-0 border border-slate-800 group-hover:border-indigo-500/30 transition-colors">
-          <Icon size={16} className={currentStage.iconColor} />
+      <div className="flex items-center gap-3.5 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] group-hover:border-[rgba(212,175,55,0.32)] flex items-center justify-center shrink-0 transition-colors">
+          <Icon size={15} strokeWidth={1.75} className={currentStage.iconColor} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-200 text-xs sm:text-sm truncate group-hover:text-white transition-colors">
+          <p className="font-medium text-[#ECEEF2] text-sm truncate group-hover:text-white">
             {topic.topic}
           </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] text-slate-500 font-mono">وزن {topic.weight || 1}</span>
+          <div className="flex items-center gap-2.5 mt-1">
+            <span className="text-[11px] text-[#7D8594] font-tabular">
+              وزن <span dir="ltr">{topic.weight || 1}</span>
+            </span>
             {nextReview && level > 0 && (
-              <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                <Calendar size={10} className="text-indigo-400" />
+              <span className="text-[11px] text-[#9CA3AF] flex items-center gap-1">
+                <Calendar size={11} className="text-[#D4AF37]" />
                 <span>
                   {new Date(nextReview).toLocaleDateString('ar-EG', {
                     day: 'numeric',
@@ -715,13 +760,11 @@ function TopicNode({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <span
-          className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-xl border ${currentStage.badgeClass} group-hover:scale-105 transition-transform`}
-        >
-          {currentStage.label}
-        </span>
-      </div>
-    </div>
+      <span
+        className={`text-[11px] font-semibold px-2.5 py-1 rounded-[8px] border shrink-0 ${currentStage.badgeClass}`}
+      >
+        {currentStage.label}
+      </span>
+    </button>
   )
 }

@@ -34,6 +34,13 @@ import {
   Shuffle,
   Snowflake,
   ArrowRight,
+  Rocket,
+  Box,
+  Home,
+  Clock,
+  Repeat,
+  Heart,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { SUBJECTS } from '@/lib/types'
@@ -42,6 +49,7 @@ import CozyStudyRoom from '@/components/CozyStudyRoom'
 import MinecraftStudyRoom from '@/components/MinecraftStudyRoom'
 import SpaceStudyRoom from '@/components/SpaceStudyRoom'
 import { soundscapeEngine } from '@/lib/soundscapes'
+import { SubjectIcon, getSubjectTheme } from '@/components/AcademicIcons'
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
 type StudioMode = 'space' | 'minecraft' | 'cozy' | 'dial'
@@ -681,12 +689,12 @@ function TimerContent() {
 
   return (
     <div
-      className={`relative w-full transition-all duration-300 ${
+      className={`relative w-full transition-colors duration-200 ${
         studioMode === 'space' || studioMode === 'minecraft'
-          ? 'w-full h-screen min-h-screen overflow-hidden bg-black'
+          ? 'w-full h-[100dvh] min-h-screen overflow-hidden bg-[#0A0B0E]'
           : isFullscreen
-          ? 'fixed inset-0 z-50 bg-[#572c47] p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
-          : 'space-y-4'
+          ? 'fixed inset-0 z-50 bg-[#0A0B0E] p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
+          : 'min-h-screen bg-[#0A0B0E] px-4 sm:px-6 pt-5 pb-10 space-y-5 max-w-5xl mx-auto overflow-y-auto max-h-[100dvh]'
       }`}
     >
       {/* Hidden Lo-Fi Stream Audio Element */}
@@ -694,83 +702,93 @@ function TimerContent() {
 
       {/* ─── Mode Switcher Bar (Only in Cozy / Dial Mode) ─────── */}
       {studioMode !== 'space' && studioMode !== 'minecraft' && (
-        <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/60 border border-white/10 shadow-lg px-2 sm:px-3 backdrop-blur-md">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <div className="flex items-center justify-between gap-2 p-1.5 rounded-[12px] bg-[#12141C] border border-[rgba(236,238,242,0.10)] shadow-md">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Link
               href="/"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold transition-all border border-white/10 shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] bg-[#191C25] hover:bg-[#202430] text-[#ECEEF2] text-xs font-semibold transition-colors border border-[rgba(236,238,242,0.10)] min-h-[38px]"
               title="العودة للصفحة الرئيسية"
             >
-              <ArrowRight size={13} />
+              <ArrowRight size={14} />
               <span className="hidden sm:inline">الرئيسية</span>
             </Link>
 
             {/* 1. Space 3D */}
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('space')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'space')
                 } catch {}
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] hover:bg-[#191C25] transition-colors min-h-[38px]"
             >
-              <span>🚀 رحلة الفضاء 3D</span>
+              <Rocket size={14} />
+              <span>رحلة الفضاء 3D</span>
             </button>
 
             {/* 2. Minecraft 4K Rainy Cottage */}
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('minecraft')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
                 } catch {}
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] hover:bg-[#191C25] transition-colors min-h-[38px]"
             >
-              <span>🌧️ كوخ ماين كرافت 4K</span>
+              <Box size={14} />
+              <span>كوخ ماين كرافت 4K</span>
             </button>
 
             {/* 3. Isometric Cozy Studio */}
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('cozy')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'cozy')
                 } catch {}
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-xs font-semibold transition-colors min-h-[38px] ${
                 studioMode === 'cozy'
-                  ? 'bg-gradient-to-r from-pink-700 to-rose-700 text-white shadow-md shadow-pink-900/40'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#D4AF37] text-[#0A0B0E]'
+                  : 'text-[#9CA3AF] hover:text-[#ECEEF2] hover:bg-[#191C25]'
               }`}
             >
-              <span>🏡 استوديو اللوفاي</span>
+              <Home size={14} />
+              <span>استوديو اللوفاي</span>
             </button>
 
             {/* 4. Precision Dial */}
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('dial')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'dial')
                 } catch {}
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-xs font-semibold transition-colors min-h-[38px] ${
                 studioMode === 'dial'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#D4AF37] text-[#0A0B0E]'
+                  : 'text-[#9CA3AF] hover:text-[#ECEEF2] hover:bg-[#191C25]'
               }`}
             >
-              <span>⏱️ قرص التوقيت</span>
+              <Clock size={14} />
+              <span>قرص التوقيت</span>
             </button>
           </div>
 
           {/* Fullscreen & Timer Mode Indicator */}
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={toggleFullscreen}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all border border-white/10"
+              aria-label={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
+              className="w-9 h-9 rounded-[8px] bg-[#191C25] hover:bg-[#202430] text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors border border-[rgba(236,238,242,0.10)] flex items-center justify-center"
               title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
             >
               {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -785,50 +803,58 @@ function TimerContent() {
       {studioMode === 'space' ? (
         <div className="relative w-full h-full min-h-screen overflow-hidden">
           {/* Subtle Floating Mode Switcher for Space Mode */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-full bg-black/75 backdrop-blur-md border border-cyan-500/40 shadow-2xl">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-[12px] bg-[#0A0B0E]/88 backdrop-blur-md border border-[rgba(236,238,242,0.14)] shadow-2xl">
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('space')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'space')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold bg-cyan-600 text-white shadow-md shadow-cyan-600/50 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#D4AF37] text-[#0A0B0E] transition-colors"
             >
-              🚀 رحلة الفضاء 3D
+              <Rocket size={13} />
+              <span>الفضاء 3D</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('minecraft')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
-              🌧️ ماين كرافت
+              <Box size={13} />
+              <span>ماين كرافت</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('cozy')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'cozy')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
-              🏡 اللوفاي
+              <Home size={13} />
+              <span>اللوفاي</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('dial')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'dial')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
-              ⏱️ القرص
+              <Clock size={13} />
+              <span>القرص</span>
             </button>
           </div>
 
@@ -865,50 +891,58 @@ function TimerContent() {
       ) : studioMode === 'minecraft' ? (
         <div className="relative w-full h-full min-h-screen overflow-hidden">
           {/* Subtle Floating Mode Switcher for Minecraft Mode */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 shadow-2xl">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 p-1 rounded-[12px] bg-[#0A0B0E]/88 backdrop-blur-md border border-[rgba(236,238,242,0.14)] shadow-2xl">
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('space')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'space')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
-              🚀 رحلة الفضاء
+              <Rocket size={13} />
+              <span>الفضاء</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('minecraft')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'minecraft')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-md shadow-emerald-600/40 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold bg-[#D4AF37] text-[#0A0B0E] transition-colors"
             >
-              🌧️ ماين كرافت 4K
+              <Box size={13} />
+              <span>ماين كرافت 4K</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('cozy')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'cozy')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
-              🏡 اللوفاي
+              <Home size={13} />
+              <span>اللوفاي</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setStudioMode('dial')
                 try {
                   localStorage.setItem('aegis_focus_studio_mode', 'dial')
                 } catch {}
               }}
-              className="px-3 py-1 rounded-full text-xs font-bold text-white/70 hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-semibold text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
-              ⏱️ القرص
+              <Clock size={13} />
+              <span>القرص</span>
             </button>
           </div>
 
@@ -950,15 +984,22 @@ function TimerContent() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="absolute top-16 right-4 sm:top-20 sm:right-6 z-40 p-3 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col gap-2.5 w-32 sm:w-36 text-white"
+                className="absolute top-16 right-4 sm:top-20 sm:right-6 z-40 p-3.5 rounded-[12px] bg-[#0D0F15]/92 backdrop-blur-md border border-[rgba(236,238,242,0.14)] shadow-2xl flex flex-col gap-2.5 w-36 sm:w-40 text-[#ECEEF2]"
               >
-                <div className="flex items-center justify-between pb-1 border-b border-white/10">
-                  <span className="text-[10px] font-bold text-emerald-400 font-mono">Sound Mixer</span>
-                  <button onClick={() => setShowMixer(false)} className="text-white/60 hover:text-white text-xs">✕</button>
+                <div className="flex items-center justify-between pb-1.5 border-b border-[rgba(236,238,242,0.08)]">
+                  <span className="text-[11px] font-semibold text-[#D4AF37]">Sound Mixer</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMixer(false)}
+                    aria-label="إغلاق مازج الصوت"
+                    className="text-[#9CA3AF] hover:text-[#ECEEF2] p-0.5"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
-                {/* 🌧️ Rain */}
+                {/* Rain */}
                 <div className="flex items-center gap-2">
-                  <CloudRain size={16} className={ambient.rain > 0 ? 'text-cyan-400' : 'text-white/60'} />
+                  <CloudRain size={15} className={ambient.rain > 0 ? 'text-[#5D8AA8]' : 'text-[#7D8594]'} />
                   <input
                     type="range"
                     min="0"
@@ -966,13 +1007,13 @@ function TimerContent() {
                     step="0.05"
                     value={ambient.rain}
                     onChange={(e) => handleAmbientChange('rain', parseFloat(e.target.value))}
-                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    className="w-full accent-[#D4AF37] h-1.5 bg-[#191C25] rounded-full cursor-pointer"
                     title="صوت المطر"
                   />
                 </div>
-                {/* ❄️ Snow / Blizzard */}
+                {/* Snow / Blizzard */}
                 <div className="flex items-center gap-2">
-                  <Snowflake size={16} className={ambient.brown > 0 ? 'text-blue-300' : 'text-white/60'} />
+                  <Snowflake size={15} className={ambient.brown > 0 ? 'text-[#9CA3AF]' : 'text-[#7D8594]'} />
                   <input
                     type="range"
                     min="0"
@@ -980,13 +1021,13 @@ function TimerContent() {
                     step="0.05"
                     value={ambient.brown}
                     onChange={(e) => handleAmbientChange('brown', parseFloat(e.target.value))}
-                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    className="w-full accent-[#D4AF37] h-1.5 bg-[#191C25] rounded-full cursor-pointer"
                     title="عاصفة ثلجية"
                   />
                 </div>
-                {/* 💨 Wind */}
+                {/* Wind */}
                 <div className="flex items-center gap-2">
-                  <Wind size={16} className={ambient.wind > 0 ? 'text-indigo-300' : 'text-white/60'} />
+                  <Wind size={15} className={ambient.wind > 0 ? 'text-[#937CB8]' : 'text-[#7D8594]'} />
                   <input
                     type="range"
                     min="0"
@@ -994,13 +1035,13 @@ function TimerContent() {
                     step="0.05"
                     value={ambient.wind}
                     onChange={(e) => handleAmbientChange('wind', parseFloat(e.target.value))}
-                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    className="w-full accent-[#D4AF37] h-1.5 bg-[#191C25] rounded-full cursor-pointer"
                     title="الرياح"
                   />
                 </div>
-                {/* 🔥 Fire */}
+                {/* Fire */}
                 <div className="flex items-center gap-2">
-                  <Flame size={16} className={ambient.fire > 0 ? 'text-amber-400' : 'text-white/60'} />
+                  <Flame size={15} className={ambient.fire > 0 ? 'text-[#C88A36]' : 'text-[#7D8594]'} />
                   <input
                     type="range"
                     min="0"
@@ -1008,7 +1049,7 @@ function TimerContent() {
                     step="0.05"
                     value={ambient.fire}
                     onChange={(e) => handleAmbientChange('fire', parseFloat(e.target.value))}
-                    className="w-full accent-emerald-400 h-1.5 bg-white/20 rounded-full"
+                    className="w-full accent-[#D4AF37] h-1.5 bg-[#191C25] rounded-full cursor-pointer"
                     title="حطب المدفأة"
                   />
                 </div>
@@ -1021,13 +1062,17 @@ function TimerContent() {
         /* 2. COZY LOFI STUDY ROOM (MATCHING USER REFERENCE SCREENSHOT 1)      */
         /* ═══════════════════════════════════════════════════════════════════ */
         <div
-          className={`relative w-full bg-[#572c47] text-white flex flex-col justify-between select-none transition-all duration-300 ${
+          className={`relative w-full bg-[#12141C] text-[#ECEEF2] flex flex-col justify-between select-none transition-colors duration-200 ${
             isFullscreen
-              ? 'fixed inset-0 z-50 w-screen h-screen p-4 sm:p-8 rounded-none border-none overflow-hidden'
-              : 'rounded-3xl border border-pink-900/30 shadow-2xl p-2 sm:p-6 min-h-[calc(100vh-100px)] overflow-hidden'
+              ? 'fixed inset-0 z-50 w-screen h-[100dvh] p-4 sm:p-8 rounded-none border-none overflow-hidden'
+              : 'rounded-[16px] border border-[rgba(236,238,242,0.10)] shadow-2xl p-3 sm:p-6 min-h-[calc(100dvh-110px)] overflow-hidden'
           }`}
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 50% 48%, rgba(212, 175, 55, 0.055) 0%, transparent 62%)',
+          }}
         >
-          {/* ─── Top Left: Activity & Timer Status (Matches Reference Screenshot!) ─── */}
+          {/* ─── Top Left: Activity & Timer Status ─── */}
           <div
             className={`absolute z-30 flex flex-col text-left ${
               isFullscreen ? 'top-6 left-6 sm:top-8 sm:left-8 gap-2.5' : 'top-4 left-4 sm:top-6 sm:left-6 gap-1.5'
@@ -1036,60 +1081,63 @@ function TimerContent() {
           >
             <div className="flex items-center gap-2.5">
               <button
+                type="button"
                 onClick={toggleRunning}
-                className={`rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white transition-all active:scale-95 shadow-md ${
-                  isFullscreen ? 'w-10 h-10 sm:w-12 sm:h-12' : 'w-7 h-7 sm:w-8 sm:h-8'
+                aria-label={running ? 'إيقاف مؤقت' : 'بدء التركيز'}
+                className={`rounded-[10px] bg-[#0A0B0E]/80 hover:bg-[#191C25] border border-[rgba(236,238,242,0.16)] flex items-center justify-center text-[#D4AF37] transition-colors ${
+                  isFullscreen ? 'w-11 h-11' : 'w-8 h-8 sm:w-9 sm:h-9'
                 }`}
                 title={running ? 'إيقاف مؤقت' : 'بدء التركيز'}
               >
                 {running ? (
-                  <Pause size={isFullscreen ? 18 : 13} />
+                  <Pause size={isFullscreen ? 18 : 14} />
                 ) : (
-                  <Play size={isFullscreen ? 18 : 13} className="translate-x-0.5" />
+                  <Play size={isFullscreen ? 18 : 14} className="translate-x-0.5" />
                 )}
               </button>
               <div
-                className={`flex items-center gap-1.5 font-bold text-white/90 ${
+                className={`flex items-center gap-1.5 font-semibold text-[#ECEEF2] ${
                   isFullscreen ? 'text-sm sm:text-base' : 'text-xs'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-full bg-pink-400 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full ${running ? 'bg-[#4EA87E]' : 'bg-[#D4AF37]'}`} />
                 <span>{mode === 'focus' ? 'Activity' : 'Break'}</span>
               </div>
             </div>
 
             <div
-              className={`flex items-center gap-2 font-mono font-bold text-white/90 pl-1 ${
+              className={`flex items-center gap-2 font-tabular font-bold text-[#ECEEF2] pl-1 ${
                 isFullscreen ? 'text-base sm:text-lg' : 'text-xs'
               }`}
             >
-              <span className="text-pink-300">🔁</span>
+              <Repeat size={13} className="text-[#D4AF37]" />
               <span
-                className={`font-black text-white tracking-wide ${
+                className={`font-bold text-[#ECEEF2] tracking-wide ${
                   isFullscreen ? 'text-2xl sm:text-4xl' : 'text-sm sm:text-base'
                 }`}
               >
                 {`${mm}:${ss}`}
               </span>
-              <span className={`text-white/60 ${isFullscreen ? 'text-xs sm:text-sm' : 'text-[11px]'}`}>
-                {running ? `${Math.ceil(remaining / 60)} min to go` : 'paused'}
+              <span className={`text-[#9CA3AF] font-normal ${isFullscreen ? 'text-xs sm:text-sm' : 'text-[11px]'}`}>
+                {running ? `${Math.ceil(remaining / 60)} min left` : 'paused'}
               </span>
             </div>
 
             {/* Current Active Subject Tag */}
             <div className="pt-0.5">
               <span
-                className={`inline-flex items-center gap-1.5 rounded-lg bg-black/40 border border-white/15 font-bold text-white/85 shadow-sm ${
-                  isFullscreen ? 'px-3.5 py-1.5 text-xs sm:text-sm' : 'px-2.5 py-0.5 text-[11px]'
+                dir="rtl"
+                className={`inline-flex items-center gap-1.5 rounded-[8px] bg-[#0A0B0E]/80 border border-[rgba(236,238,242,0.12)] font-semibold text-[#ECEEF2] ${
+                  isFullscreen ? 'px-3.5 py-1.5 text-xs sm:text-sm' : 'px-2.5 py-1 text-[11px]'
                 }`}
               >
-                <span>{subject.icon}</span>
+                <SubjectIcon subjectId={subject.id} size={13} />
                 <span>{subject.name}</span>
               </span>
             </div>
           </div>
 
-          {/* ─── Top Right: Clock, Quick Buttons & Sound Mixer Panel (Matches Screenshot!) ─── */}
+          {/* ─── Top Right: Clock, Quick Buttons & Sound Mixer Panel ─── */}
           <div
             className={`absolute z-30 flex flex-col items-end ${
               isFullscreen ? 'top-6 right-6 sm:top-8 sm:right-8 gap-3.5' : 'top-4 right-4 sm:top-6 sm:right-6 gap-2.5'
@@ -1097,34 +1145,39 @@ function TimerContent() {
           >
             {/* Digital Clock (HH:MM | AM/PM) Capsule */}
             <div
-              className={`flex items-center gap-2 bg-black/40 border border-white/20 font-mono font-bold text-white shadow-lg backdrop-blur-md select-none ${
-                isFullscreen ? 'px-4 py-2 rounded-2xl text-sm sm:text-lg' : 'px-3 py-1 rounded-xl text-xs sm:text-sm'
+              dir="ltr"
+              className={`flex items-center gap-2 bg-[#0A0B0E]/80 border border-[rgba(236,238,242,0.14)] font-tabular font-semibold text-[#ECEEF2] backdrop-blur-md select-none ${
+                isFullscreen ? 'px-4 py-2 rounded-[10px] text-sm sm:text-base' : 'px-3 py-1.5 rounded-[8px] text-xs'
               }`}
             >
               <span>{clockTime.split(' ')[0] || '15:11'}</span>
-              <span className="text-white/30 text-xs">|</span>
-              <span className="text-white/70">{clockTime.split(' ')[1] || 'PM'}</span>
+              <span className="text-[#6B7280] text-xs">|</span>
+              <span className="text-[#D4AF37]">{clockTime.split(' ')[1] || 'PM'}</span>
             </div>
 
             {/* Quick Actions (Goal/Tasks, Fullscreen) */}
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setShowGoalModal(true)}
-                className={`bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95 ${
+                aria-label="تحديد هدف الجلسة"
+                className={`bg-[#0A0B0E]/80 hover:bg-[#191C25] border border-[rgba(236,238,242,0.14)] flex items-center justify-center text-[#ECEEF2] transition-colors ${
                   isFullscreen
-                    ? 'w-10 h-10 sm:w-12 sm:h-12 rounded-2xl'
-                    : 'w-8 h-8 sm:w-9 sm:h-9 rounded-xl'
+                    ? 'w-11 h-11 rounded-[10px]'
+                    : 'w-9 h-9 rounded-[8px]'
                 }`}
                 title="تحديد هدف الجلسة"
               >
-                <ListTodo size={isFullscreen ? 18 : 15} />
+                <ListTodo size={isFullscreen ? 18 : 15} className="text-[#D4AF37]" />
               </button>
               <button
+                type="button"
                 onClick={toggleFullscreen}
-                className={`bg-black/40 hover:bg-black/60 border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all shadow-md active:scale-95 ${
+                aria-label={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
+                className={`bg-[#0A0B0E]/80 hover:bg-[#191C25] border border-[rgba(236,238,242,0.14)] flex items-center justify-center text-[#ECEEF2] transition-colors ${
                   isFullscreen
-                    ? 'w-10 h-10 sm:w-12 sm:h-12 rounded-2xl'
-                    : 'w-8 h-8 sm:w-9 sm:h-9 rounded-xl'
+                    ? 'w-11 h-11 rounded-[10px]'
+                    : 'w-9 h-9 rounded-[8px]'
                 }`}
                 title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
               >
@@ -1136,19 +1189,19 @@ function TimerContent() {
               </button>
             </div>
 
-            {/* ─── Ambient Sound Mixer Vertical Panel (From Screenshot!) ──── */}
+            {/* ─── Ambient Sound Mixer Vertical Panel ──── */}
             <div
-              className={`bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col ${
+              className={`bg-[#0A0B0E]/85 backdrop-blur-md border border-[rgba(236,238,242,0.14)] shadow-xl flex flex-col ${
                 isFullscreen
-                  ? 'p-3.5 sm:p-4 rounded-3xl gap-3 sm:gap-3.5 w-36 sm:w-44'
-                  : 'p-2.5 rounded-2xl gap-2.5 w-28 sm:w-32'
+                  ? 'p-3.5 sm:p-4 rounded-[12px] gap-3 w-36 sm:w-44'
+                  : 'p-2.5 rounded-[10px] gap-2.5 w-28 sm:w-32'
               }`}
             >
-              {/* 🌧️ Row 1: Rain */}
+              {/* Rain */}
               <div className="flex items-center gap-2 px-1">
                 <CloudRain
-                  size={isFullscreen ? 18 : 16}
-                  className={`shrink-0 ${ambient.rain > 0 ? 'text-cyan-400' : 'text-white/60'}`}
+                  size={isFullscreen ? 17 : 15}
+                  className={`shrink-0 ${ambient.rain > 0 ? 'text-[#5D8AA8]' : 'text-[#7D8594]'}`}
                 />
                 <input
                   type="range"
@@ -1157,18 +1210,16 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.rain}
                   onChange={(e) => handleAmbientChange('rain', parseFloat(e.target.value))}
-                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
-                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
-                  }`}
+                  className="w-full accent-[#D4AF37] cursor-pointer bg-[#191C25] rounded-full h-1.5"
                   title="صوت المطر"
                 />
               </div>
 
-              {/* ❄️ Row 2: Snow / Cold Blizzard Noise */}
+              {/* Snow / Cold Noise */}
               <div className="flex items-center gap-2 px-1">
                 <Snowflake
-                  size={isFullscreen ? 18 : 16}
-                  className={`shrink-0 ${ambient.brown > 0 ? 'text-blue-300' : 'text-white/60'}`}
+                  size={isFullscreen ? 17 : 15}
+                  className={`shrink-0 ${ambient.brown > 0 ? 'text-[#9CA3AF]' : 'text-[#7D8594]'}`}
                 />
                 <input
                   type="range"
@@ -1177,18 +1228,16 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.brown}
                   onChange={(e) => handleAmbientChange('brown', parseFloat(e.target.value))}
-                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
-                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
-                  }`}
+                  className="w-full accent-[#D4AF37] cursor-pointer bg-[#191C25] rounded-full h-1.5"
                   title="عاصفة ثلجية وهدوء تام"
                 />
               </div>
 
-              {/* 💨 Row 3: Wind */}
+              {/* Wind */}
               <div className="flex items-center gap-2 px-1">
                 <Wind
-                  size={isFullscreen ? 18 : 16}
-                  className={`shrink-0 ${ambient.wind > 0 ? 'text-indigo-300' : 'text-white/60'}`}
+                  size={isFullscreen ? 17 : 15}
+                  className={`shrink-0 ${ambient.wind > 0 ? 'text-[#937CB8]' : 'text-[#7D8594]'}`}
                 />
                 <input
                   type="range"
@@ -1197,18 +1246,16 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.wind}
                   onChange={(e) => handleAmbientChange('wind', parseFloat(e.target.value))}
-                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
-                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
-                  }`}
+                  className="w-full accent-[#D4AF37] cursor-pointer bg-[#191C25] rounded-full h-1.5"
                   title="نسيم الرياح"
                 />
               </div>
 
-              {/* 🔥 Row 4: Fire */}
+              {/* Fire */}
               <div className="flex items-center gap-2 px-1">
                 <Flame
-                  size={isFullscreen ? 18 : 16}
-                  className={`shrink-0 ${ambient.fire > 0 ? 'text-amber-400' : 'text-white/60'}`}
+                  size={isFullscreen ? 17 : 15}
+                  className={`shrink-0 ${ambient.fire > 0 ? 'text-[#C88A36]' : 'text-[#7D8594]'}`}
                 />
                 <input
                   type="range"
@@ -1217,16 +1264,14 @@ function TimerContent() {
                   step="0.05"
                   value={ambient.fire}
                   onChange={(e) => handleAmbientChange('fire', parseFloat(e.target.value))}
-                  className={`w-full accent-white cursor-pointer bg-white/20 rounded-full ${
-                    isFullscreen ? 'h-2 sm:h-2.5' : 'h-1.5'
-                  }`}
+                  className="w-full accent-[#D4AF37] cursor-pointer bg-[#191C25] rounded-full h-1.5"
                   title="حطب المدفأة"
                 />
               </div>
             </div>
           </div>
 
-          {/* ─── Centerpiece: The Ultra HD 2K Isometric Cozy Study Cabin Artwork ─── */}
+          {/* ─── Centerpiece: Isometric Cozy Study Cabin Artwork ─── */}
           <div className="flex-1 w-full flex items-center justify-center my-auto relative z-10 py-1">
             <CozyStudyRoom
               isFocusing={running && mode === 'focus'}
@@ -1243,55 +1288,61 @@ function TimerContent() {
             <AnimatePresence>
               {catPurring && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  role="status"
+                  aria-live="polite"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-pink-950/90 border border-pink-500/50 text-xs sm:text-sm font-bold text-pink-200 shadow-2xl backdrop-blur-md z-30"
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-[10px] bg-[#191C25] border border-[rgba(212,175,55,0.40)] text-xs font-semibold text-[#ECEEF2] shadow-2xl z-30 flex items-center gap-2 whitespace-nowrap"
                 >
-                  🐱 مياو! القطة تشعر بالدفء وممتنة لمذاكرتك المركزة ❤️
+                  <Heart size={13} className="text-[#D4AF37] fill-[#D4AF37]" />
+                  <span>القطة تشعر بالدفء وترافقك في جلسة التركيز</span>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* ─── Bottom Center: Lo-Fi Music Player Bar (Matches Reference Screenshot!) ─── */}
+          {/* ─── Bottom Center: Lo-Fi Music Player Bar ─── */}
           <div
-            className={`relative z-20 flex flex-col items-center justify-center gap-3 border-t border-white/10 ${
+            className={`relative z-20 flex flex-col items-center justify-center gap-3 border-t border-[rgba(236,238,242,0.08)] ${
               isFullscreen ? 'pt-5 pb-2' : 'pt-3'
             }`}
           >
-            {/* Centered Lofi Player (Play/Pause, Shuffle, Volume, Track Name) */}
+            {/* Centered Lofi Player */}
             <div className="flex flex-col items-center gap-1.5" dir="ltr">
               <div
-                className={`flex items-center bg-black/40 rounded-full border border-white/20 shadow-lg backdrop-blur-md ${
-                  isFullscreen ? 'px-5 py-2.5 sm:px-6 sm:py-3 gap-4' : 'px-3.5 py-1.5 gap-3'
+                className={`flex items-center bg-[#0A0B0E]/85 rounded-[10px] border border-[rgba(236,238,242,0.14)] backdrop-blur-md ${
+                  isFullscreen ? 'px-5 py-2.5 gap-4' : 'px-3.5 py-1.5 gap-3'
                 }`}
               >
                 <button
+                  type="button"
                   onClick={toggleLofi}
-                  className={`rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-transform active:scale-90 ${
-                    isFullscreen ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-7 h-7'
+                  aria-label={lofiPlaying ? 'إيقاف مؤقت' : 'تشغيل اللوفاي'}
+                  className={`rounded-[8px] bg-[#191C25] hover:bg-[#202430] text-[#ECEEF2] flex items-center justify-center transition-colors ${
+                    isFullscreen ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-8 h-8'
                   }`}
                   title={lofiPlaying ? 'إيقاف مؤقت' : 'تشغيل اللوفاي'}
                 >
                   {lofiPlaying ? (
-                    <Pause size={isFullscreen ? 17 : 14} />
+                    <Pause size={isFullscreen ? 16 : 14} />
                   ) : (
-                    <Play size={isFullscreen ? 17 : 14} className="translate-x-0.5" />
+                    <Play size={isFullscreen ? 16 : 14} className="translate-x-0.5" />
                   )}
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => changeLofiStation(1)}
-                  className={`rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-transform active:scale-90 ${
-                    isFullscreen ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-7 h-7'
+                  aria-label="المحطة التالية"
+                  className={`rounded-[8px] bg-[#191C25] hover:bg-[#202430] text-[#9CA3AF] hover:text-[#ECEEF2] flex items-center justify-center transition-colors ${
+                    isFullscreen ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-8 h-8'
                   }`}
                   title="المحطة التالية"
                 >
-                  <Shuffle size={isFullscreen ? 17 : 14} />
+                  <Shuffle size={isFullscreen ? 16 : 14} />
                 </button>
 
-                {/* Volume Slider matching reference screenshot thumb style */}
                 <input
                   type="range"
                   min="0"
@@ -1299,16 +1350,15 @@ function TimerContent() {
                   step="0.05"
                   value={lofiVolume}
                   onChange={(e) => setLofiVolume(parseFloat(e.target.value))}
-                  className={`accent-white bg-white/25 rounded-full cursor-pointer ${
-                    isFullscreen ? 'w-28 sm:w-36 h-2' : 'w-20 h-1.5'
+                  className={`accent-[#D4AF37] bg-[#191C25] rounded-full cursor-pointer ${
+                    isFullscreen ? 'w-28 sm:w-36 h-1.5' : 'w-24 h-1.5'
                   }`}
                   title="مستوى الصوت"
                 />
               </div>
 
-              {/* Track Title / Artist */}
               <p
-                className={`font-mono font-medium text-white/70 tracking-wide select-none ${
+                className={`font-tabular font-medium text-[#9CA3AF] select-none ${
                   isFullscreen ? 'text-xs sm:text-sm' : 'text-[11px]'
                 }`}
               >
@@ -1316,33 +1366,34 @@ function TimerContent() {
               </p>
             </div>
 
-            {/* Quick Action Buttons (Presets, Reset & Complete Session XP) */}
+            {/* Quick Action Buttons */}
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              {/* Presets */}
               <div
-                className={`flex items-center p-1 rounded-xl bg-black/40 border border-white/15 ${
-                  isFullscreen ? 'gap-1.5 sm:gap-2' : 'gap-1'
+                className={`flex items-center p-1 rounded-[10px] bg-[#0A0B0E]/85 border border-[rgba(236,238,242,0.12)] ${
+                  isFullscreen ? 'gap-1.5' : 'gap-1'
                 }`}
               >
                 {[25, 45, 60].map((m) => (
                   <button
+                    type="button"
                     key={m}
                     onClick={() => setPresetMinutes(m)}
-                    className={`rounded-lg font-bold transition-all ${
-                      isFullscreen ? 'px-3.5 py-1.5 text-sm sm:text-base' : 'px-2.5 py-1 text-xs'
+                    className={`rounded-[7px] font-semibold font-tabular transition-colors ${
+                      isFullscreen ? 'px-3.5 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'
                     } ${
                       totalSeconds === m * 60
-                        ? 'bg-pink-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#D4AF37] text-[#0A0B0E]'
+                        : 'text-[#9CA3AF] hover:text-[#ECEEF2]'
                     }`}
                   >
                     {`${m}د`}
                   </button>
                 ))}
                 <button
+                  type="button"
                   onClick={addFiveMinutes}
-                  className={`rounded-lg font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-colors ${
-                    isFullscreen ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs'
+                  className={`rounded-[7px] font-semibold font-tabular text-[#9CA3AF] hover:text-[#ECEEF2] hover:bg-[#191C25] transition-colors ${
+                    isFullscreen ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'
                   }`}
                   title="إضافة 5 دقائق"
                 >
@@ -1350,24 +1401,25 @@ function TimerContent() {
                 </button>
               </div>
 
-              {/* Reset */}
               <button
+                type="button"
                 onClick={handleReset}
-                className={`rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-slate-300 hover:text-white transition-all ${
+                aria-label="إعادة ضبط المؤقت"
+                className={`rounded-[10px] bg-[#0A0B0E]/85 hover:bg-[#191C25] border border-[rgba(236,238,242,0.12)] text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors ${
                   isFullscreen ? 'p-2.5 sm:p-3' : 'p-2'
                 }`}
                 title="إعادة ضبط المؤقت"
               >
-                <RotateCcw size={isFullscreen ? 18 : 15} />
+                <RotateCcw size={isFullscreen ? 17 : 15} />
               </button>
 
-              {/* Early complete & log XP */}
               {activeSessionId && (
                 <button
+                  type="button"
                   onClick={() => completeSession()}
                   disabled={sessionLoading}
-                  className={`flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all ${
-                    isFullscreen ? 'px-4 py-2 text-sm sm:text-base' : 'px-3.5 py-1.5 text-xs'
+                  className={`flex items-center gap-1.5 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] text-[#0A0B0E] font-semibold transition-colors ${
+                    isFullscreen ? 'px-4 py-2 text-sm' : 'px-3.5 py-2 text-xs'
                   }`}
                 >
                   <CheckCircle2 size={isFullscreen ? 17 : 14} />
@@ -1379,82 +1431,91 @@ function TimerContent() {
         </div>
       ) : (
         /* ═══════════════════════════════════════════════════════════════════ */
-        /* 2. CLASSIC PRECISION CHRONOMETER DIAL                              */
+        /* 4. DARK ACADEMIC PRECISION CHRONOMETER DIAL                        */
         /* ═══════════════════════════════════════════════════════════════════ */
-        <div className="panel p-6 sm:p-8 flex flex-col items-center gap-6">
-          {/* Mode Switcher (Pill Segmented Selector) */}
-          <div className="flex items-center p-1.5 rounded-2xl bg-[#141922] border border-slate-800 shadow-inner max-w-sm w-full">
+        <div className="aegis-panel-elevated p-6 sm:p-10 flex flex-col items-center gap-6 max-w-2xl mx-auto">
+          {/* Mode Switcher */}
+          <div className="flex items-center p-1 rounded-[12px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] max-w-md w-full">
             <button
+              type="button"
               onClick={() => switchMode('focus')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-[8px] text-xs font-semibold transition-colors min-h-[40px] ${
                 mode === 'focus'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(212,175,55,0.35)]'
+                  : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
               }`}
             >
-              <Brain size={14} />
+              <Brain size={14} className={mode === 'focus' ? 'text-[#D4AF37]' : ''} />
               <span>تركيز عميق</span>
             </button>
 
             <button
+              type="button"
               onClick={() => switchMode('shortBreak')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-[8px] text-xs font-semibold transition-colors min-h-[40px] ${
                 mode === 'shortBreak'
-                  ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(78,168,126,0.35)]'
+                  : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
               }`}
             >
-              <Coffee size={14} />
+              <Coffee size={14} className={mode === 'shortBreak' ? 'text-[#4EA87E]' : ''} />
               <span>راحة قصيرة</span>
             </button>
 
             <button
+              type="button"
               onClick={() => switchMode('longBreak')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-[8px] text-xs font-semibold transition-colors min-h-[40px] ${
                 mode === 'longBreak'
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#191C25] text-[#ECEEF2] border border-[rgba(200,138,54,0.35)]'
+                  : 'text-[#9CA3AF] hover:text-[#ECEEF2] border border-transparent'
               }`}
             >
-              <Compass size={14} />
+              <Compass size={14} className={mode === 'longBreak' ? 'text-[#C88A36]' : ''} />
               <span>راحة طويلة</span>
             </button>
           </div>
 
           {/* Subject Selection */}
           {mode === 'focus' && (
-            <div className="flex gap-2 flex-wrap justify-center max-w-md">
-              {SUBJECTS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    setSelectedSubject(s.id)
-                    handleReset()
-                  }}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border ${
-                    selectedSubject === s.id
-                      ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300 shadow-md shadow-emerald-500/10'
-                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                  }`}
-                >
-                  <span className="text-sm">{s.icon}</span>
-                  <span>{s.name}</span>
-                </button>
-              ))}
+            <div className="flex gap-2 flex-wrap justify-center max-w-lg">
+              {SUBJECTS.map((s) => {
+                const theme = getSubjectTheme(s.id)
+                const isSel = selectedSubject === s.id
+                return (
+                  <button
+                    type="button"
+                    key={s.id}
+                    onClick={() => {
+                      setSelectedSubject(s.id)
+                      handleReset()
+                    }}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors border min-h-[40px] ${
+                      isSel
+                        ? `bg-[#12141C] ${theme.border} text-[#ECEEF2]`
+                        : 'border-[rgba(236,238,242,0.08)] bg-[#07080B] text-[#9CA3AF] hover:text-[#ECEEF2]'
+                    }`}
+                  >
+                    <SubjectIcon subjectId={s.id} size={14} />
+                    <span>{s.name}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
 
           {/* Duration Presets */}
           {mode === 'focus' && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-center">
               {FOCUS_PRESETS.map((p) => (
                 <button
+                  type="button"
                   key={p.minutes}
                   onClick={() => setPresetMinutes(p.minutes)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  className={`px-3.5 py-1.5 rounded-[8px] text-xs font-semibold font-tabular transition-colors border min-h-[38px] ${
                     totalSeconds === p.minutes * 60
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      ? 'bg-[#D4AF37] text-[#0A0B0E] border-[#E0C058]'
+                      : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
                   }`}
                 >
                   {p.label}
@@ -1463,31 +1524,26 @@ function TimerContent() {
             </div>
           )}
 
-          {/* Precision Dial SVG */}
+          {/* Horological Precision Dial SVG */}
           <div className="relative flex items-center justify-center my-2">
-            <div
-              className={`absolute w-72 h-72 rounded-full pointer-events-none transition-all duration-1000 ${
-                running ? 'bg-emerald-500/15 blur-3xl animate-pulse' : 'bg-slate-800/20 blur-2xl'
-              }`}
-            />
-
             <svg width="280" height="280" viewBox="0 0 280 280" className="relative z-10 select-none">
               <defs>
                 <linearGradient id="focusProgressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="60%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#3b82f6" />
+                  <stop offset="0%" stopColor="#B89427" />
+                  <stop offset="55%" stopColor="#D4AF37" />
+                  <stop offset="100%" stopColor="#E0C058" />
                 </linearGradient>
               </defs>
 
-              <circle cx="140" cy="140" r={radius} fill="none" stroke="#1e293b" strokeWidth="8" />
+              <circle cx="140" cy="140" r={radius} fill="none" stroke="#07080B" strokeWidth="10" />
+              <circle cx="140" cy="140" r={radius} fill="none" stroke="rgba(236,238,242,0.08)" strokeWidth="1" />
               <circle
                 cx="140"
                 cy="140"
                 r={radius}
                 fill="none"
                 stroke="url(#focusProgressGrad)"
-                strokeWidth="10"
+                strokeWidth="7"
                 strokeDasharray={circumference}
                 strokeDashoffset={dashOffset}
                 strokeLinecap="round"
@@ -1498,16 +1554,16 @@ function TimerContent() {
 
             {/* Inner Digits - STRICT DIR=LTR FOR MM:SS */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
-              <span className="text-[11px] font-bold text-slate-400 mb-1">
+              <span className="text-xs font-semibold text-[#9CA3AF] mb-1.5">
                 {mode === 'focus' ? subject.name : 'استراحة'}
               </span>
-              <div dir="ltr" className="flex items-baseline justify-center font-mono text-5xl font-black text-white tracking-tight">
+              <div dir="ltr" className="flex items-baseline justify-center font-tabular text-5xl font-bold text-[#ECEEF2] tracking-tight">
                 <span>{mm}</span>
-                <span className="animate-pulse text-emerald-400/80 mx-0.5">:</span>
+                <span className="text-[#D4AF37] mx-0.5">:</span>
                 <span>{ss}</span>
               </div>
-              <p className="text-[11px] font-semibold text-slate-500 mt-1 font-mono">
-                {Math.round(progressFraction * 100)}% مكتمل
+              <p className="text-[11px] font-medium text-[#7D8594] mt-2 font-tabular">
+                <span dir="ltr">{Math.round(progressFraction * 100)}%</span> مكتمل
               </p>
             </div>
           </div>
@@ -1515,28 +1571,34 @@ function TimerContent() {
           {/* Dial Controls */}
           <div className="flex items-center gap-4">
             <button
+              type="button"
               onClick={handleReset}
-              className="w-12 h-12 rounded-2xl bg-[#141922] border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95"
+              aria-label="إعادة ضبط المؤقت"
+              className="w-12 h-12 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.12)] hover:border-[rgba(236,238,242,0.24)] flex items-center justify-center text-[#9CA3AF] hover:text-[#ECEEF2] transition-colors"
             >
               <RotateCcw size={18} />
             </button>
 
             <motion.button
-              whileTap={{ scale: 0.94 }}
+              type="button"
+              whileTap={{ scale: 0.96 }}
               onClick={toggleRunning}
               disabled={sessionLoading}
-              className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl transition-all ${
+              aria-label={running ? 'إيقاف مؤقت' : 'بدء التركيز'}
+              className={`w-18 h-18 rounded-[16px] flex items-center justify-center shadow-lg transition-colors ${
                 running
-                  ? 'bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700'
-                  : 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-emerald-600/30'
+                  ? 'bg-[#12141C] hover:bg-[#202430] text-[#D4AF37] border border-[rgba(212,175,55,0.45)]'
+                  : 'bg-[#D4AF37] hover:bg-[#E0C058] text-[#0A0B0E]'
               }`}
             >
-              {running ? <Pause size={30} /> : <Play size={30} className="translate-x-0.5" />}
+              {running ? <Pause size={26} /> : <Play size={26} className="translate-x-0.5" />}
             </motion.button>
 
             <button
+              type="button"
               onClick={addFiveMinutes}
-              className="w-12 h-12 rounded-2xl bg-[#141922] border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-400 hover:text-emerald-400 transition-all active:scale-95 text-xs font-bold font-mono"
+              aria-label="إضافة 5 دقائق"
+              className="w-12 h-12 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.12)] hover:border-[rgba(212,175,55,0.35)] flex items-center justify-center text-[#9CA3AF] hover:text-[#D4AF37] transition-colors text-xs font-bold font-tabular"
             >
               +5
             </button>
@@ -1547,40 +1609,47 @@ function TimerContent() {
       {/* ─── Goal Modal Drawer ─────────────────────────────────────────── */}
       <AnimatePresence>
         {showGoalModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(6,7,10,0.82)] backdrop-blur-md">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md bg-[#1e1326] border border-purple-800/60 rounded-3xl p-5 shadow-2xl"
+              initial={{ y: 12, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 12, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="تحديد هدف جلسة المذاكرة"
+              className="w-full max-w-md bg-[#191C25] border border-[rgba(236,238,242,0.14)] rounded-[16px] p-5 sm:p-6 shadow-2xl"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-black text-white flex items-center gap-2">
-                  <Target size={18} className="text-pink-400" />
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[rgba(236,238,242,0.08)]">
+                <h3 className="text-sm sm:text-base font-bold text-[#ECEEF2] flex items-center gap-2">
+                  <Target size={17} className="text-[#D4AF37]" />
                   <span>تحديد هدف جلسة المذاكرة</span>
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setShowGoalModal(false)}
-                  className="text-slate-400 hover:text-white text-xs font-bold"
+                  aria-label="إغلاق"
+                  className="text-[#9CA3AF] hover:text-[#ECEEF2] text-xs font-semibold px-2 py-1"
                 >
                   إغلاق
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <input
                   type="text"
                   value={sessionGoal}
                   onChange={(e) => setSessionGoal(e.target.value)}
                   placeholder="مثلاً: حل 10 أسئلة نحو + مراجعة الفصل..."
-                  className="w-full p-3 rounded-2xl bg-black/40 border border-purple-500/40 text-xs text-white placeholder-slate-500 outline-none focus:border-pink-500"
+                  className="w-full px-3.5 h-11 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.12)] text-sm text-[#ECEEF2] placeholder-[#6B7280] focus:border-[#D4AF37]"
                   dir="auto"
                 />
 
                 <div className="flex justify-end gap-2">
                   <button
+                    type="button"
                     onClick={() => setShowGoalModal(false)}
-                    className="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow-md transition-all"
+                    className="px-5 py-2.5 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] text-[#0A0B0E] font-semibold text-xs transition-colors min-h-[40px]"
                   >
                     حفظ الهدف
                   </button>

@@ -17,12 +17,13 @@ import {
   HelpCircle,
   Brain,
   Star,
-  Award,
   Flame,
   Layers,
   Sparkles,
+  Target,
 } from 'lucide-react'
 import { SUBJECTS, SpacedReviewTopic } from '@/lib/types'
+import { SubjectIcon, getSubjectTheme } from '@/components/AcademicIcons'
 
 type CategoryFilter = 'all' | 'assignments' | 'exams' | 'reviews' | 'lectures' | 'backlog'
 
@@ -36,7 +37,6 @@ let cachedTasksData: {
 } | null = null
 
 export default function TasksPage() {
-  // Selected Subject: null = كل المواد, or subject ID (6, 7, 8, 9)
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null)
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   const [loading, setLoading] = useState(!cachedTasksData)
@@ -75,7 +75,6 @@ export default function TasksPage() {
   const [formExamType, setFormExamType] = useState('quiz')
   const [formNotes, setFormNotes] = useState('')
 
-  // Fetch tasks and spaced repetition reviews
   const fetchTasks = async (showLoading = !cachedTasksData) => {
     try {
       if (showLoading) setLoading(true)
@@ -101,10 +100,8 @@ export default function TasksPage() {
     fetchTasks()
   }, [])
 
-  // Today's date string (YYYY-MM-DD)
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  // Filter items by selected subject
   const currentSubject = useMemo(
     () => SUBJECTS.find((s) => s.id === selectedSubjectId),
     [selectedSubjectId]
@@ -123,7 +120,6 @@ export default function TasksPage() {
     }
   }, [data, selectedSubjectId])
 
-  // Spaced Repetition Due vs All (Only count studied topics: mastery_level > 0)
   const dueReviews = useMemo(() => {
     return subjectFiltered.reviews.filter((r) => {
       const isStudied = (r.mastery_level || 0) > 0
@@ -136,7 +132,6 @@ export default function TasksPage() {
     return subjectFiltered.reviews.filter((r) => (r.mastery_level || 0) > 0)
   }, [subjectFiltered.reviews])
 
-  // Calculate task counts per subject (REALISTIC: only true pending items + true due reviews)
   const subjectTaskCounts = useMemo(() => {
     const counts: Record<
       number,
@@ -175,7 +170,6 @@ export default function TasksPage() {
       }
     })
 
-    // Reviews: only count if mastery_level > 0 AND due today or overdue
     data.reviews.forEach((r) => {
       const isStudied = (r.mastery_level || 0) > 0
       const isDue = isStudied && (!r.next_review_date || r.next_review_date.split('T')[0] <= todayStr)
@@ -188,12 +182,10 @@ export default function TasksPage() {
     return counts
   }, [data, todayStr])
 
-  // Total pending tasks across all subjects
   const totalGlobalPending = useMemo(() => {
     return Object.values(subjectTaskCounts).reduce((acc, c) => acc + c.total, 0)
   }, [subjectTaskCounts])
 
-  // Category counts for current view
   const categoryCounts = useMemo(() => {
     const a = subjectFiltered.assignments.filter((i) => i.status !== 'done').length
     const e = subjectFiltered.exams.filter((i) => i.status !== 'done').length
@@ -204,7 +196,6 @@ export default function TasksPage() {
     return { all, assignments: a, exams: e, reviews: r, lectures: l, backlog: b }
   }, [subjectFiltered, dueReviews])
 
-  // Toggle status of regular tasks
   const handleToggleStatus = async (table: string, id: number, currentStatus: string) => {
     let newStatus = 'done'
     if (table === 'assignments') {
@@ -217,7 +208,6 @@ export default function TasksPage() {
       newStatus = currentStatus === 'done' ? 'pending' : 'done'
     }
 
-    // Optimistic update
     setData((prev) => {
       const updated = {
         ...prev,
@@ -237,11 +227,10 @@ export default function TasksPage() {
       })
     } catch (e) {
       console.error('Update status error:', e)
-      fetchTasks() // revert
+      fetchTasks()
     }
   }
 
-  // Rate topic in Spaced Repetition (SM-2)
   const handleRateReview = async (topicId: number, grade: number) => {
     setReviewSubmitting(true)
     try {
@@ -252,18 +241,16 @@ export default function TasksPage() {
       })
       const json = await res.json()
       if (json.success) {
-        // Trigger celebratory confetti
         try {
           const confetti = (await import('canvas-confetti')).default
           confetti({
-            particleCount: 80,
+            particleCount: 75,
             spread: 60,
             origin: { y: 0.65 },
-            colors: ['#10b981', '#34d399', '#06b6d4', '#f59e0b'],
+            colors: ['#D4AF37', '#4EA87E', '#ECEEF2', '#C88A36'],
           })
         } catch {}
 
-        // Optimistically update topic review date & mastery in state
         const sm2 = json.data
         setData((prev) => {
           const updated = {
@@ -295,7 +282,6 @@ export default function TasksPage() {
     }
   }
 
-  // Create new task/exam/backlog/lecture
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formTitle.trim()) return
@@ -338,7 +324,6 @@ export default function TasksPage() {
       const resData = await res.json()
 
       if (res.ok && resData.success) {
-        // Optimistic update
         const newItem = resData.data?.[0] || { ...payload, id: Date.now(), created_at: new Date().toISOString() }
         setData((prev) => {
           const updated = {
@@ -352,7 +337,6 @@ export default function TasksPage() {
         setFormTitle('')
         setFormNotes('')
         setFormDueDate('')
-        // Background sync
         setTimeout(() => fetchTasks(), 500)
       } else {
         const errMsg = resData?.error || 'حدث خطأ أثناء الحفظ'
@@ -366,7 +350,6 @@ export default function TasksPage() {
     }
   }
 
-  // Open add modal pre-filtered to a specific subject
   const openAddModalForSubject = (subjectId?: number, category?: typeof formCategory) => {
     if (subjectId) setFormSubjectId(subjectId)
     else if (selectedSubjectId) setFormSubjectId(selectedSubjectId)
@@ -376,903 +359,850 @@ export default function TasksPage() {
   }
 
   return (
-    <main className="min-h-screen pb-28 pt-8 px-4 sm:px-6 max-w-5xl mx-auto" dir="rtl">
-      {/* ─── Top Main Header ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-6 bg-gradient-to-b from-cyan-400 to-indigo-500 rounded-full inline-block shadow-[0_0_12px_#06b6d4]" />
-            <h1 className="text-xl sm:text-2xl font-black text-white">مهام ومناهج المواد</h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            اختر المادة لتصفح تكليفاتها ومواعيد امتحاناتها ومراجعات التكرار المتباعد
-          </p>
-        </div>
-
-        <button
-          onClick={() => openAddModalForSubject()}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Plus size={16} />
-          <span>إضافة جديد</span>
-        </button>
-      </div>
-
-      {/* ─── XP Toast Celebration ──────────────────────────────────────── */}
-      <AnimatePresence>
-        {earnedXpToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600/20 via-teal-500/20 to-indigo-600/20 border border-emerald-500/40 flex items-center justify-between gap-3 shadow-lg shadow-emerald-600/10"
-          >
-            <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-emerald-500/30 text-emerald-300 flex items-center justify-center font-bold text-base">
-                ✨
-              </span>
-              <div>
-                <p className="text-xs font-black text-emerald-300">أحسنت! تمت مراجعة التكرار المتباعد واحتساب نقاط الخبرة</p>
-                <p className="text-[11px] text-slate-300 truncate max-w-[220px] sm:max-w-md">{earnedXpToast.topic}</p>
-              </div>
+    <main className="min-h-screen lg:pr-60" dir="rtl">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 lg:pt-8 pb-24 lg:pb-10">
+        {/* ─── Top Main Header ────────────────────────────────────────────── */}
+        <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5 border-b border-[rgba(236,238,242,0.07)]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-[10px] bg-[#191C25] border border-[rgba(212,175,55,0.32)] flex items-center justify-center text-[#D4AF37]">
+              <CheckSquare size={20} strokeWidth={1.75} />
             </div>
-            <span className="px-3 py-1 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs shadow-sm">
-              +{earnedXpToast.xp} XP
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#ECEEF2]">مهام ومناهج المواد</h1>
+              <p className="text-xs text-[#9CA3AF] mt-0.5">
+                إدارة التكليفات ومواعيد الامتحانات ومراجعات التكرار المتباعد
+              </p>
+            </div>
+          </div>
 
-      {/* ─── Dynamic Responsive Subject Selector Grid ───────────────────── */}
-      {/* 5 Distinct Cards - 100% visible on both mobile and desktop (NO HIDDEN SCROLL!) */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2.5 px-1">
-          <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-            <BookOpen size={14} className="text-indigo-400" />
-            <span>قائمة المواد الدراسية:</span>
-          </span>
-          <span className="text-[11px] text-slate-500 font-mono">
-            {selectedSubjectId ? `محددة: ${currentSubject?.name}` : 'عرض كل المواد'}
-          </span>
-        </div>
-
-        {/* 5-Column Grid on desktop, 3+2 or 5 on mobile */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
-          {/* 1. ALL SUBJECTS */}
           <button
-            onClick={() => setSelectedSubjectId(null)}
-            className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
-              selectedSubjectId === null
-                ? 'bg-gradient-to-b from-indigo-600/30 to-indigo-900/40 border-indigo-500/70 shadow-lg shadow-indigo-600/20 ring-1 ring-indigo-400/40 scale-[1.02]'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
-            }`}
+            type="button"
+            onClick={() => openAddModalForSubject()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] text-[#0A0B0E] font-semibold text-xs transition-colors min-h-[44px]"
           >
-            <span className="text-2xl">🌟</span>
-            <span className={`text-xs font-black ${selectedSubjectId === null ? 'text-white' : 'text-slate-300'}`}>
-              كل المواد
+            <Plus size={16} strokeWidth={2} />
+            <span>إضافة مهمة</span>
+          </button>
+        </header>
+
+        {/* ─── XP Toast Celebration ──────────────────────────────────────── */}
+        <AnimatePresence>
+          {earnedXpToast && (
+            <motion.div
+              role="status"
+              aria-live="polite"
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="mb-5 p-4 rounded-[12px] bg-[#191C25] border border-[rgba(78,168,126,0.38)] border-r-4 border-r-[#4EA87E] flex items-center justify-between gap-3 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.6)]"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-[8px] bg-[rgba(78,168,126,0.14)] text-[#4EA87E] flex items-center justify-center shrink-0">
+                  <Sparkles size={17} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[#ECEEF2]">
+                    تم تسجيل مراجعة التكرار المتباعد واحتساب نقاط الخبرة
+                  </p>
+                  <p className="text-[11px] text-[#9CA3AF] truncate">{earnedXpToast.topic}</p>
+                </div>
+              </div>
+              <span
+                dir="ltr"
+                className="px-3 py-1 rounded-[8px] bg-[rgba(212,175,55,0.14)] border border-[rgba(212,175,55,0.35)] text-[#D4AF37] font-bold font-tabular text-xs shrink-0"
+              >
+                +{earnedXpToast.xp} XP
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ─── Subject Selector Strip (5-Card Responsive Grid) ─────────────── */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs font-semibold text-[#9CA3AF] flex items-center gap-1.5">
+              <BookOpen size={14} className="text-[#D4AF37]" />
+              <span>تصفية حسب المادة</span>
             </span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+            <span className="text-[11px] text-[#7D8594]">
+              {selectedSubjectId ? `المحددة: ${currentSubject?.name}` : 'جميع المواد'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            {/* ALL SUBJECTS */}
+            <button
+              type="button"
+              onClick={() => setSelectedSubjectId(null)}
+              className={`col-span-2 sm:col-span-1 p-3.5 rounded-[12px] transition-colors flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-2 border text-right sm:text-center min-h-[56px] ${
                 selectedSubjectId === null
-                  ? 'bg-indigo-500 text-white'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-[#191C25] border-[rgba(212,175,55,0.45)] text-[#ECEEF2]'
+                  : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2] hover:border-[rgba(236,238,242,0.18)]'
               }`}
             >
-              {totalGlobalPending} مهام
-            </span>
-            {selectedSubjectId === null && (
-              <span className="absolute -bottom-1 w-6 h-1 bg-indigo-500 rounded-full shadow-[0_0_8px_#6366f1]" />
-            )}
-          </button>
-
-          {/* 2..5. DYNAMIC SUBJECTS (العربية -> الإنجليزية -> التاريخ -> البرمجة) */}
-          {SUBJECTS.map((s) => {
-            const isSelected = selectedSubjectId === s.id
-            const count = subjectTaskCounts[s.id]?.total || 0
-
-            const colorTheme: Record<number, { bgActive: string; textActive: string; badgeActive: string; dot: string }> = {
-              6: {
-                bgActive: 'bg-gradient-to-b from-emerald-600/30 to-teal-900/40 border-emerald-500/70 shadow-emerald-600/20 ring-emerald-400/40',
-                textActive: 'text-emerald-300',
-                badgeActive: 'bg-emerald-500 text-slate-950 font-black',
-                dot: 'bg-emerald-500 shadow-[0_0_8px_#10b981]',
-              },
-              8: {
-                bgActive: 'bg-gradient-to-b from-purple-600/30 to-violet-900/40 border-purple-500/70 shadow-purple-600/20 ring-purple-400/40',
-                textActive: 'text-purple-300',
-                badgeActive: 'bg-purple-500 text-white',
-                dot: 'bg-purple-500 shadow-[0_0_8px_#a855f7]',
-              },
-              9: {
-                bgActive: 'bg-gradient-to-b from-amber-600/30 to-orange-900/40 border-amber-500/70 shadow-amber-600/20 ring-amber-400/40',
-                textActive: 'text-amber-300',
-                badgeActive: 'bg-amber-500 text-slate-950 font-black',
-                dot: 'bg-amber-500 shadow-[0_0_8px_#f59e0b]',
-              },
-              7: {
-                bgActive: 'bg-gradient-to-b from-blue-600/30 to-indigo-900/40 border-blue-500/70 shadow-blue-600/20 ring-blue-400/40',
-                textActive: 'text-blue-300',
-                badgeActive: 'bg-blue-500 text-white',
-                dot: 'bg-blue-500 shadow-[0_0_8px_#3b82f6]',
-              },
-            }
-
-            const theme = colorTheme[s.id] || {
-              bgActive: 'bg-indigo-600/30 border-indigo-500',
-              textActive: 'text-indigo-300',
-              badgeActive: 'bg-indigo-500 text-white',
-              dot: 'bg-indigo-500 shadow-[0_0_8px_#6366f1]',
-            }
-
-            return (
-              <button
-                key={s.id}
-                onClick={() => setSelectedSubjectId(s.id)}
-                className={`p-3 rounded-2xl transition-all flex flex-col items-center justify-center gap-1.5 relative border text-center ${
-                  isSelected
-                    ? `${theme.bgActive} shadow-lg ring-1 scale-[1.02]`
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
-                }`}
-              >
-                <span className="text-2xl">{s.icon}</span>
-                <span className={`text-xs font-black ${isSelected ? theme.textActive : 'text-slate-300'}`}>
-                  {s.name}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    isSelected ? theme.badgeActive : 'bg-slate-800 text-slate-400'
+              <div className="flex sm:flex-col items-center gap-2.5 sm:gap-1.5">
+                <div
+                  className={`w-8 h-8 rounded-[8px] flex items-center justify-center border ${
+                    selectedSubjectId === null
+                      ? 'bg-[rgba(212,175,55,0.12)] border-[rgba(212,175,55,0.32)] text-[#D4AF37]'
+                      : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#7D8594]'
                   }`}
                 >
-                  {count} معلقة
-                </span>
-                {isSelected && (
-                  <span className={`absolute -bottom-1 w-6 h-1 rounded-full ${theme.dot}`} />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ─── Selected Subject Focus Banner ──────────────────────────────── */}
-      {currentSubject && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-5 p-4 sm:p-5 rounded-3xl glass-card border border-slate-800 relative overflow-hidden"
-        >
-          <div
-            className={`absolute -top-12 -left-12 w-44 h-44 bg-gradient-to-br ${currentSubject.color} opacity-20 rounded-full blur-2xl pointer-events-none`}
-          />
-          <div className="flex items-center justify-between gap-3 relative z-10">
-            <div className="flex items-center gap-3.5">
-              <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${currentSubject.color} flex items-center justify-center text-2xl shadow-lg ring-1 ring-white/20`}
-              >
-                {currentSubject.icon}
+                  <Layers size={16} />
+                </div>
+                <span className="text-xs font-semibold">كل المواد</span>
               </div>
-              <div>
+              <span
+                dir="ltr"
+                className={`px-2 py-0.5 rounded-[6px] text-[11px] font-tabular font-semibold ${
+                  selectedSubjectId === null
+                    ? 'bg-[rgba(212,175,55,0.14)] text-[#D4AF37]'
+                    : 'bg-[#07080B] text-[#7D8594]'
+                }`}
+              >
+                {totalGlobalPending}
+              </span>
+            </button>
+
+            {/* DYNAMIC SUBJECTS */}
+            {SUBJECTS.map((s) => {
+              const isSelected = selectedSubjectId === s.id
+              const count = subjectTaskCounts[s.id]?.total || 0
+              const theme = getSubjectTheme(s.id)
+
+              return (
+                <button
+                  type="button"
+                  key={s.id}
+                  onClick={() => setSelectedSubjectId(s.id)}
+                  className={`p-3.5 rounded-[12px] transition-colors flex flex-col items-center justify-center gap-2 border text-center min-h-[86px] ${
+                    isSelected
+                      ? `bg-[#191C25] ${theme.border} text-[#ECEEF2]`
+                      : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2] hover:border-[rgba(236,238,242,0.18)]'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-[8px] flex items-center justify-center border ${
+                      isSelected
+                        ? `${theme.bgSubtle} ${theme.border}`
+                        : 'bg-[#07080B] border-[rgba(236,238,242,0.08)]'
+                    }`}
+                  >
+                    <SubjectIcon subjectId={s.id} size={16} />
+                  </div>
+                  <span className="text-xs font-semibold leading-tight">{s.name}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-[6px] text-[10px] font-tabular font-semibold ${
+                      isSelected ? `${theme.bgSubtle} ${theme.text}` : 'bg-[#07080B] text-[#7D8594]'
+                    }`}
+                  >
+                    <span dir="ltr">{count}</span> معلقة
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* ─── Selected Subject Focus Banner ──────────────────────────────── */}
+        {currentSubject && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
+            className="mb-5 p-4 sm:p-5 rounded-[14px] aegis-panel-elevated flex flex-wrap items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div
+                className={`w-11 h-11 rounded-[10px] ${getSubjectTheme(currentSubject.id).bgSubtle} border ${getSubjectTheme(currentSubject.id).border} flex items-center justify-center shrink-0`}
+              >
+                <SubjectIcon subjectId={currentSubject.id} size={20} />
+              </div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-black text-white">{currentSubject.name}</h2>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-900/90 text-slate-300 border border-slate-700/60">
+                  <h2 className="text-base font-bold text-[#ECEEF2]">{currentSubject.name}</h2>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-[6px] bg-[#07080B] text-[#9CA3AF] border border-[rgba(236,238,242,0.08)]">
                     مساحة المادة
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400 flex-wrap">
-                  <span className="text-emerald-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.assignments || 0} واجبات`}</span>
-                  <span>•</span>
-                  <span className="text-amber-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.exams || 0} امتحانات`}</span>
-                  <span>•</span>
-                  <span className="text-purple-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.reviews || 0} مراجعات تكرار`}</span>
-                  <span>•</span>
-                  <span className="text-cyan-300 font-semibold">{`${subjectTaskCounts[currentSubject.id]?.lectures || 0} محاضرات`}</span>
+                <div className="flex items-center gap-2 mt-1 text-xs text-[#9CA3AF] flex-wrap">
+                  <span className="text-[#4EA87E] font-medium">
+                    <span dir="ltr" className="font-tabular">{subjectTaskCounts[currentSubject.id]?.assignments || 0}</span> واجبات
+                  </span>
+                  <span className="text-[#6B7280]">•</span>
+                  <span className="text-[#C88A36] font-medium">
+                    <span dir="ltr" className="font-tabular">{subjectTaskCounts[currentSubject.id]?.exams || 0}</span> امتحانات
+                  </span>
+                  <span className="text-[#6B7280]">•</span>
+                  <span className="text-[#937CB8] font-medium">
+                    <span dir="ltr" className="font-tabular">{subjectTaskCounts[currentSubject.id]?.reviews || 0}</span> مراجعات
+                  </span>
+                  <span className="text-[#6B7280]">•</span>
+                  <span className="text-[#5D8AA8] font-medium">
+                    <span dir="ltr" className="font-tabular">{subjectTaskCounts[currentSubject.id]?.lectures || 0}</span> محاضرات
+                  </span>
                 </div>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={() => openAddModalForSubject(currentSubject.id)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-750 text-white border border-slate-700 text-xs font-bold transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] bg-[#12141C] hover:bg-[#202430] text-[#ECEEF2] border border-[rgba(236,238,242,0.14)] text-xs font-semibold transition-colors min-h-[40px]"
             >
-              <Plus size={14} className="text-emerald-400" />
+              <Plus size={14} className="text-[#D4AF37]" />
               <span>إضافة للمادة</span>
             </button>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
 
-      {/* ─── Dynamic Category Filter Tabs ───────────────────────────────── */}
-      <div className="grid grid-cols-6 gap-1 p-1 rounded-2xl glass-card mb-5 border-slate-800 text-center">
-        {/* All */}
-        <button
-          onClick={() => setCategoryFilter('all')}
-          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            categoryFilter === 'all'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
+        {/* ─── Category Filter Tabs (3x2 Mobile, 6-Col Desktop) ─────────────── */}
+        <div
+          role="tablist"
+          aria-label="تصنيف المهام"
+          className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 p-1.5 rounded-[12px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] mb-6"
         >
-          <span className="block text-[11px] sm:text-xs">الكل</span>
-          {categoryCounts.all > 0 && (
-            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-indigo-950 text-indigo-200 border border-indigo-400/30 font-mono">
-              {categoryCounts.all}
-            </span>
-          )}
-        </button>
-
-        {/* Assignments */}
-        <button
-          onClick={() => setCategoryFilter('assignments')}
-          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            categoryFilter === 'assignments'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span className="block text-[11px] sm:text-xs">الواجبات</span>
-          {categoryCounts.assignments > 0 && (
-            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-950 text-emerald-200 border border-emerald-400/30 font-mono">
-              {categoryCounts.assignments}
-            </span>
-          )}
-        </button>
-
-        {/* Exams */}
-        <button
-          onClick={() => setCategoryFilter('exams')}
-          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            categoryFilter === 'exams'
-              ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span className="block text-[11px] sm:text-xs">الامتحانات</span>
-          {categoryCounts.exams > 0 && (
-            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-200 border border-amber-400/30 font-mono">
-              {categoryCounts.exams}
-            </span>
-          )}
-        </button>
-
-        {/* Spaced Repetition (Reviews) */}
-        <button
-          onClick={() => setCategoryFilter('reviews')}
-          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            categoryFilter === 'reviews'
-              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span className="block text-[11px] sm:text-xs">التكرار</span>
-          {categoryCounts.reviews > 0 && (
-            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-purple-950 text-purple-200 border border-purple-400/30 font-mono">
-              {categoryCounts.reviews}
-            </span>
-          )}
-        </button>
-
-        {/* Lectures */}
-        <button
-          onClick={() => setCategoryFilter('lectures')}
-          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            categoryFilter === 'lectures'
-              ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span className="block text-[11px] sm:text-xs">المحاضرات</span>
-          {categoryCounts.lectures > 0 && (
-            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-950 text-cyan-200 border border-cyan-400/30 font-mono">
-              {categoryCounts.lectures}
-            </span>
-          )}
-        </button>
-
-        {/* Backlog */}
-        <button
-          onClick={() => setCategoryFilter('backlog')}
-          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            categoryFilter === 'backlog'
-              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span className="block text-[11px] sm:text-xs">التراكمات</span>
-          {categoryCounts.backlog > 0 && (
-            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-200 border border-rose-400/30 font-mono">
-              {categoryCounts.backlog}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* ─── Main Content Stream ────────────────────────────────────────── */}
-      {loading ? (
-        <div className="space-y-3 animate-pulse">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-20 rounded-2xl bg-white/5 border border-white/5 p-4 flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-6 h-6 rounded-lg bg-white/10 shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-40 bg-white/10 rounded" />
-                  <div className="h-3 w-24 bg-white/5 rounded" />
-                </div>
-              </div>
-              <div className="h-7 w-16 rounded-xl bg-white/5 shrink-0" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* SECTION 1: SPACED REPETITION (REVIEWS)                         */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {(categoryFilter === 'all' || categoryFilter === 'reviews') && (
-            <div className="space-y-3">
-              {categoryFilter === 'all' && dueReviews.length > 0 && (
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-center gap-2 text-xs font-black text-purple-400">
-                    <Brain size={16} />
-                    <span>مراجعات التكرار المتباعد المستحقة اليوم 🔥</span>
-                  </div>
-                  <span className="text-[10px] text-purple-300 font-mono bg-purple-500/15 px-2 py-0.5 rounded-full border border-purple-500/30">
-                    {`${dueReviews.length} دروس مستحقة`}
+          {[
+            { id: 'all', label: 'الكل', count: categoryCounts.all },
+            { id: 'assignments', label: 'الواجبات', count: categoryCounts.assignments },
+            { id: 'exams', label: 'الامتحانات', count: categoryCounts.exams },
+            { id: 'reviews', label: 'التكرار', count: categoryCounts.reviews },
+            { id: 'lectures', label: 'المحاضرات', count: categoryCounts.lectures },
+            { id: 'backlog', label: 'التراكمات', count: categoryCounts.backlog },
+          ].map((tab) => {
+            const isActive = categoryFilter === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setCategoryFilter(tab.id as CategoryFilter)}
+                className={`py-2 px-2 rounded-[8px] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 min-h-[42px] border ${
+                  isActive
+                    ? 'bg-[#191C25] text-[#ECEEF2] border-[rgba(212,175,55,0.35)]'
+                    : 'text-[#9CA3AF] hover:text-[#ECEEF2] border-transparent'
+                }`}
+              >
+                <span className="truncate">{tab.label}</span>
+                {tab.count > 0 && (
+                  <span
+                    dir="ltr"
+                    className={`px-1.5 py-0.5 rounded-[6px] text-[10px] font-tabular ${
+                      isActive
+                        ? 'bg-[rgba(212,175,55,0.14)] text-[#D4AF37]'
+                        : 'bg-[#12141C] text-[#7D8594]'
+                    }`}
+                  >
+                    {tab.count}
                   </span>
-                </div>
-              )}
+                )}
+              </button>
+            )
+          })}
+        </div>
 
-              {categoryFilter === 'reviews' && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/20 mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Brain size={18} className="text-purple-400" />
-                      <h3 className="font-bold text-xs text-white">نظام التكرار المتباعد الخوارزمي (SM-2)</h3>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-purple-300 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30">
-                      {reviewScope === 'due' ? `${dueReviews.length} مستحق اليوم` : `${allStudiedReviews.length} درس مجدول`}
+        {/* ─── Main Content Stream ────────────────────────────────────────── */}
+        {loading ? (
+          <div className="space-y-3 animate-pulse">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-20 rounded-[12px] bg-[#12141C] border border-[rgba(236,238,242,0.07)]" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* SECTION 1: SPACED REPETITION (REVIEWS) */}
+            {(categoryFilter === 'all' || categoryFilter === 'reviews') && (
+              <section className="space-y-3">
+                {categoryFilter === 'all' && dueReviews.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <h2 className="flex items-center gap-2 text-xs font-bold text-[#937CB8]">
+                      <Brain size={15} />
+                      <span>مراجعات التكرار المتباعد المستحقة اليوم</span>
+                    </h2>
+                    <span className="text-[11px] text-[#937CB8] font-tabular bg-[rgba(147,124,184,0.10)] px-2.5 py-0.5 rounded-[6px] border border-[rgba(147,124,184,0.28)]">
+                      <span dir="ltr">{dueReviews.length}</span> مستحق
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
-                    المراجعة في المواعيد المحددة تمنع نسيان الدروس وتثبتها في الذاكرة الدائمة بدون جهد مضاعف.
-                  </p>
+                )}
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setReviewScope('due')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        reviewScope === 'due'
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      🔥 المستحق الآن ({dueReviews.length})
-                    </button>
-                    <button
-                      onClick={() => setReviewScope('all')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        reviewScope === 'all'
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      📅 كل الدروس المفعلة ({allStudiedReviews.length})
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Render Reviews */}
-              {(() => {
-                const reviewsToRender = categoryFilter === 'reviews' && reviewScope === 'all' ? allStudiedReviews : dueReviews
-
-                if (categoryFilter === 'reviews' && reviewsToRender.length === 0) {
-                  return (
-                    <EmptyState
-                      title={reviewScope === 'due' ? 'عاش جداً! مفيش مراجعات مستحقة اليوم 🎉' : 'لا توجد دروس قيد المراجعة'}
-                      subtitle="كل دروس المنهج تم مراجعتها في مواعيدها، عُد غداً لجلسة المراجعة القادمة"
-                      onAdd={() => openAddModalForSubject()}
-                    />
-                  )
-                }
-
-                return reviewsToRender.map((topic) => {
-                  const subject = SUBJECTS.find((s) => s.id === topic.subject_id)
-                  const isDue = !topic.next_review_date || topic.next_review_date.split('T')[0] <= todayStr
-
-                  return (
-                    <div
-                      key={`review-${topic.id}`}
-                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all ${
-                        isDue
-                          ? 'border-purple-500/40 bg-purple-950/20 shadow-sm shadow-purple-900/10'
-                          : 'border-slate-800/80 bg-slate-900/40'
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {subject && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                              {subject.icon} {subject.name}
-                            </span>
-                          )}
-                          {topic.chapter && (
-                            <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                              {topic.chapter}
-                            </span>
-                          )}
-                        </div>
-
-                        <h4 className="font-bold text-sm text-slate-100 truncate">{topic.topic}</h4>
-
-                        <div className="flex items-center gap-3 mt-1.5 text-[10px]">
-                          {isDue ? (
-                            <span className="text-amber-400 font-bold flex items-center gap-1">
-                              <Flame size={12} className="text-orange-400" />
-                              <span>مستحق المراجعة الآن!</span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 font-mono flex items-center gap-1">
-                              <Calendar size={11} />
-                              <span>{`المراجعة: ${new Date(topic.next_review_date!).toLocaleDateString('ar-EG')}`}</span>
-                            </span>
-                          )}
-
-                          <span className="text-slate-400 flex items-center gap-1">
-                            <Star size={11} className={topic.mastery_level > 0 ? 'text-amber-400 fill-amber-400' : 'text-slate-600'} />
-                            <span>{`الإتقان: ${topic.mastery_level || 0}/5`}</span>
-                          </span>
-                        </div>
+                {categoryFilter === 'reviews' && (
+                  <div className="aegis-panel p-5 mb-3 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Brain size={17} className="text-[#937CB8]" />
+                        <h2 className="font-semibold text-sm text-[#ECEEF2]">نظام التكرار المتباعد الخوارزمي (SM-2)</h2>
                       </div>
+                      <span className="text-[11px] font-tabular font-semibold text-[#937CB8] px-2.5 py-0.5 rounded-[6px] bg-[rgba(147,124,184,0.10)] border border-[rgba(147,124,184,0.28)]">
+                        {reviewScope === 'due' ? `${dueReviews.length} مستحق` : `${allStudiedReviews.length} مجدول`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                      المراجعة في مواعيد الاستحقاق تثبّت الدروس في الذاكرة طويلة المدى بأقل مجهود ممكن.
+                    </p>
 
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
-                        onClick={() => setReviewModalTopic(topic)}
-                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition-all shrink-0 flex items-center gap-1"
+                        type="button"
+                        onClick={() => setReviewScope('due')}
+                        className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors min-h-[40px] border flex items-center gap-1.5 ${
+                          reviewScope === 'due'
+                            ? 'bg-[#191C25] border-[rgba(147,124,184,0.45)] text-[#ECEEF2]'
+                            : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
+                        }`}
                       >
-                        <Brain size={14} />
-                        <span>مراجعة</span>
+                        <Flame size={13} className="text-[#C88A36]" />
+                        <span>المستحق الآن (<span dir="ltr" className="font-tabular">{dueReviews.length}</span>)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReviewScope('all')}
+                        className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors min-h-[40px] border flex items-center gap-1.5 ${
+                          reviewScope === 'all'
+                            ? 'bg-[#191C25] border-[rgba(147,124,184,0.45)] text-[#ECEEF2]'
+                            : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
+                        }`}
+                      >
+                        <Calendar size={13} className="text-[#937CB8]" />
+                        <span>كل الدروس المفعلة (<span dir="ltr" className="font-tabular">{allStudiedReviews.length}</span>)</span>
                       </button>
                     </div>
-                  )
-                })
-              })()}
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* SECTION 2: EXAMS                                               */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {(categoryFilter === 'all' || categoryFilter === 'exams') && (
-            <div className="space-y-3">
-              {categoryFilter === 'all' && subjectFiltered.exams.filter((e) => e.status !== 'done').length > 0 && (
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-xs font-black text-amber-400">
-                    <Calendar size={16} />
-                    <span>الامتحانات القادمة 🎯</span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {categoryFilter === 'exams' && subjectFiltered.exams.length === 0 ? (
-                <EmptyState
-                  title={currentSubject ? `مفيش امتحانات مسجلة في ${currentSubject.name}` : 'مفيش امتحانات مسجلة'}
-                  subtitle="سجل مواعيد الامتحانات والـ Quizzes عشان ترتب جدولك بدري"
-                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'exams')}
-                />
-              ) : (
-                subjectFiltered.exams.map((item) => {
-                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                  const isDone = item.status === 'done'
+                {(() => {
+                  const reviewsToRender = categoryFilter === 'reviews' && reviewScope === 'all' ? allStudiedReviews : dueReviews
 
-                  return (
-                    <div
-                      key={`exam-${item.id}`}
-                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
-                        isDone ? 'opacity-60 bg-slate-900/40' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          onClick={() => handleToggleStatus('exams', item.id, item.status)}
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                            isDone
-                              ? 'bg-emerald-500 text-white'
-                              : 'border-2 border-slate-600 hover:border-amber-400 text-transparent'
-                          }`}
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
+                  if (categoryFilter === 'reviews' && reviewsToRender.length === 0) {
+                    return (
+                      <EmptyState
+                        title={reviewScope === 'due' ? 'لا توجد مراجعات مستحقة اليوم' : 'لا توجد دروس قيد المراجعة'}
+                        subtitle="جميع الدروس المجدولة تمت مراجعتها في موعدها، يمكنك إضافة مهام أخرى أو العودة غداً"
+                        onAdd={() => openAddModalForSubject()}
+                      />
+                    )
+                  }
 
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-bold text-sm text-slate-100 truncate ${isDone ? 'line-through' : ''}`}>
-                            {item.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {subject && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                {subject.icon} {subject.name}
-                              </span>
-                            )}
-                            {item.exam_date && (
-                              <span className="text-[10px] text-amber-400 flex items-center gap-1 font-bold">
-                                <Calendar size={11} />
-                                <span>{new Date(item.exam_date).toLocaleDateString('ar-EG')}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                  return reviewsToRender.map((topic) => {
+                    const subject = SUBJECTS.find((s) => s.id === topic.subject_id)
+                    const isDue = !topic.next_review_date || topic.next_review_date.split('T')[0] <= todayStr
 
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                        {item.exam_type || 'اختبار'}
-                      </span>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* SECTION 3: ASSIGNMENTS                                         */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {(categoryFilter === 'all' || categoryFilter === 'assignments') && (
-            <div className="space-y-3">
-              {categoryFilter === 'all' && subjectFiltered.assignments.filter((a) => a.status !== 'done').length > 0 && (
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-xs font-black text-emerald-400">
-                    <CheckSquare size={16} />
-                    <span>الواجبات والتكليفات 📝</span>
-                  </div>
-                </div>
-              )}
-
-              {categoryFilter === 'assignments' && subjectFiltered.assignments.length === 0 ? (
-                <EmptyState
-                  title={currentSubject ? `مفيش واجبات في ${currentSubject.name}` : 'مفيش واجبات مسجلة حالياً'}
-                  subtitle="اضغط على زر إضافة جديد عشان تسجل واجب جديد"
-                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'assignments')}
-                />
-              ) : (
-                subjectFiltered.assignments.map((item) => {
-                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                  const isDone = item.status === 'done'
-
-                  return (
-                    <div
-                      key={`assign-${item.id}`}
-                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 transition-all ${
-                        isDone ? 'opacity-60 bg-slate-900/40' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          onClick={() => handleToggleStatus('assignments', item.id, item.status)}
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                            isDone
-                              ? 'bg-emerald-500 text-white'
-                              : 'border-2 border-slate-600 hover:border-emerald-400 text-transparent'
-                          }`}
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
-
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`font-bold text-sm text-slate-100 truncate ${
-                              isDone ? 'line-through text-slate-400' : ''
-                            }`}
-                          >
-                            {item.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {subject && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                {subject.icon} {subject.name}
-                              </span>
-                            )}
-                            {item.due_date && (
-                              <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
-                                <Clock size={11} className="text-amber-400" />
-                                <span>{new Date(item.due_date).toLocaleDateString('ar-EG')}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${
-                          item.priority === 'high'
-                            ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                            : item.priority === 'medium'
-                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                    return (
+                      <div
+                        key={`review-${topic.id}`}
+                        className={`aegis-panel p-4 flex items-center justify-between gap-3 ${
+                          isDue ? 'border-[rgba(147,124,184,0.35)]' : ''
                         }`}
                       >
-                        {item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'عادي'}
-                      </span>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* SECTION 4: LECTURES                                            */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {(categoryFilter === 'all' || categoryFilter === 'lectures') && (
-            <div className="space-y-3">
-              {categoryFilter === 'all' && subjectFiltered.lectures.filter((l) => l.status !== 'done').length > 0 && (
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-xs font-black text-cyan-400">
-                    <BookOpen size={16} />
-                    <span>المحاضرات والحصص 📚</span>
-                  </div>
-                </div>
-              )}
-
-              {categoryFilter === 'lectures' && subjectFiltered.lectures.length === 0 ? (
-                <EmptyState
-                  title={currentSubject ? `مفيش محاضرات في ${currentSubject.name}` : 'مفيش محاضرات مسجلة'}
-                  subtitle="سجل مواعيد حصصك والسناتر أو المنصات هنا"
-                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'lectures')}
-                />
-              ) : (
-                subjectFiltered.lectures.map((item) => {
-                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                  const isAttended = item.status === 'done'
-
-                  return (
-                    <div
-                      key={`lec-${item.id}`}
-                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
-                        isAttended ? 'opacity-60 bg-slate-900/40' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          onClick={() => handleToggleStatus('lectures', item.id, item.status)}
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                            isAttended
-                              ? 'bg-cyan-500 text-white'
-                              : item.status === 'missed'
-                              ? 'bg-rose-500/40 text-rose-300 border-2 border-rose-500'
-                              : 'border-2 border-slate-600 hover:border-cyan-400 text-transparent'
-                          }`}
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
-
                         <div className="flex-1 min-w-0">
-                          <p className={`font-bold text-sm text-slate-100 truncate ${isAttended ? 'line-through' : ''}`}>
-                            {item.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                             {subject && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                {subject.icon} {subject.name}
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                                <SubjectIcon subjectId={subject.id} size={11} />
+                                <span>{subject.name}</span>
                               </span>
                             )}
-                            {item.date && (
-                              <span className="text-[10px] text-cyan-400 flex items-center gap-1 font-bold">
-                                <Calendar size={11} />
-                                <span>{new Date(item.date).toLocaleDateString('ar-EG')}</span>
+                            {topic.chapter && (
+                              <span className="text-[11px] text-[#7D8594] truncate max-w-[180px]">
+                                {topic.chapter}
                               </span>
                             )}
                           </div>
-                        </div>
-                      </div>
 
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                        {isAttended ? 'تم الحضور ✅' : item.status === 'missed' ? 'غائب ❌' : 'قادمة 📅'}
-                      </span>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          )}
+                          <h3 className="font-semibold text-sm text-[#ECEEF2] truncate">{topic.topic}</h3>
 
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* SECTION 5: BACKLOG                                             */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {(categoryFilter === 'all' || categoryFilter === 'backlog') && (
-            <div className="space-y-3">
-              {categoryFilter === 'all' && subjectFiltered.backlog.filter((b) => b.status !== 'cleared').length > 0 && (
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-xs font-black text-rose-400">
-                    <Clock size={16} />
-                    <span>التراكمات الدراسية ⏳</span>
-                  </div>
-                </div>
-              )}
-
-              {categoryFilter === 'backlog' && subjectFiltered.backlog.length === 0 ? (
-                <EmptyState
-                  title="عاش! مفيش أي تراكمات مسجلة"
-                  subtitle="لو فيه درس متراكم حطه هنا عشان نجدوله في جلسات المذاكرة"
-                  onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'backlog')}
-                />
-              ) : (
-                subjectFiltered.backlog.map((item) => {
-                  const subject = SUBJECTS.find((s) => s.id === item.subject_id)
-                  const isCleared = item.status === 'cleared'
-
-                  return (
-                    <div
-                      key={`back-${item.id}`}
-                      className={`glass-interactive rounded-2xl p-4 flex items-center justify-between gap-3 border-slate-800/80 ${
-                        isCleared ? 'opacity-60' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          onClick={() => handleToggleStatus('backlog', item.id, item.status)}
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                            isCleared
-                              ? 'bg-emerald-500 text-white'
-                              : 'border-2 border-slate-600 hover:border-rose-400 text-transparent'
-                          }`}
-                        >
-                          <CheckCircle2 size={16} />
-                        </button>
-
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-bold text-sm text-slate-100 truncate ${isCleared ? 'line-through' : ''}`}>
-                            {item.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {subject && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                                {subject.icon} {subject.name}
+                          <div className="flex items-center gap-3 mt-1.5 text-[11px]">
+                            {isDue ? (
+                              <span className="text-[#C88A36] font-semibold flex items-center gap-1">
+                                <Flame size={12} />
+                                <span>مستحق المراجعة</span>
+                              </span>
+                            ) : (
+                              <span className="text-[#9CA3AF] flex items-center gap-1">
+                                <Calendar size={11} />
+                                <span>{`الموعد: ${new Date(topic.next_review_date!).toLocaleDateString('ar-EG')}`}</span>
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
-                              <Clock size={11} className="text-rose-400" />
-                              <span>{`${item.estimated_hours || 1} ساعة تقديرية`}</span>
+
+                            <span className="text-[#9CA3AF] flex items-center gap-1 font-tabular">
+                              <Star size={11} className={topic.mastery_level > 0 ? 'text-[#D4AF37] fill-[#D4AF37]' : 'text-[#6B7280]'} />
+                              <span>الإتقان <span dir="ltr">{topic.mastery_level || 0}/5</span></span>
                             </span>
                           </div>
                         </div>
-                      </div>
 
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${
-                          isCleared
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                            : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                        <button
+                          type="button"
+                          onClick={() => setReviewModalTopic(topic)}
+                          className="px-3.5 py-2 rounded-[10px] bg-[#191C25] hover:bg-[#202430] border border-[rgba(147,124,184,0.40)] text-[#ECEEF2] font-semibold text-xs shrink-0 flex items-center gap-1.5 transition-colors min-h-[42px]"
+                        >
+                          <Brain size={14} className="text-[#937CB8]" />
+                          <span>مراجعة</span>
+                        </button>
+                      </div>
+                    )
+                  })
+                })()}
+              </section>
+            )}
+
+            {/* SECTION 2: EXAMS */}
+            {(categoryFilter === 'all' || categoryFilter === 'exams') && (
+              <section className="space-y-3">
+                {categoryFilter === 'all' && subjectFiltered.exams.filter((e) => e.status !== 'done').length > 0 && (
+                  <h2 className="flex items-center gap-2 text-xs font-bold text-[#C88A36]">
+                    <Target size={15} />
+                    <span>الامتحانات القادمة</span>
+                  </h2>
+                )}
+
+                {categoryFilter === 'exams' && subjectFiltered.exams.length === 0 ? (
+                  <EmptyState
+                    title={currentSubject ? `لا توجد امتحانات مسجلة في ${currentSubject.name}` : 'لا توجد امتحانات مسجلة'}
+                    subtitle="سجّل مواعيد الامتحانات والاختبارات القصيرة لترتيب خطة المذاكرة مبكراً"
+                    onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'exams')}
+                  />
+                ) : (
+                  subjectFiltered.exams.map((item) => {
+                    const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                    const isDone = item.status === 'done'
+
+                    return (
+                      <div
+                        key={`exam-${item.id}`}
+                        className={`aegis-panel p-4 flex items-center justify-between gap-3 transition-opacity ${
+                          isDone ? 'opacity-55' : ''
                         }`}
                       >
-                        {isCleared ? 'تم التصفية ✅' : 'متراكم ⚠️'}
-                      </span>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          )}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus('exams', item.id, item.status)}
+                            aria-label={isDone ? `إلغاء إتمام ${item.title}` : `تحديد ${item.title} كمكتمل`}
+                            className="w-11 h-11 -mr-2 flex items-center justify-center shrink-0 rounded-[10px]"
+                          >
+                            <span
+                              className={`w-6 h-6 rounded-[7px] flex items-center justify-center transition-colors border ${
+                                isDone
+                                  ? 'bg-[#4EA87E] border-[#4EA87E] text-[#0A0B0E]'
+                                  : 'bg-[#07080B] border-[rgba(236,238,242,0.22)] hover:border-[#C88A36] text-transparent'
+                              }`}
+                            >
+                              <Check size={14} strokeWidth={2.5} />
+                            </span>
+                          </button>
 
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* EMPTY OVERALL STATE                                            */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {categoryFilter === 'all' && categoryCounts.all === 0 && (
-            <EmptyState
-              title={currentSubject ? `لا توجد مهام أو مراجعات معلقة في ${currentSubject.name}` : 'لا توجد مهام معلقة إطلاقاً! 🎉'}
-              subtitle="أنت في قمة التميز، اضغط على زر إضافة لتسجيل واجب أو محاضرة جديدة"
-              onAdd={() => openAddModalForSubject(selectedSubjectId || undefined)}
-            />
-          )}
-        </div>
-      )}
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold text-sm text-[#ECEEF2] truncate ${isDone ? 'line-through text-[#7D8594]' : ''}`}>
+                              {item.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {subject && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                                  <SubjectIcon subjectId={subject.id} size={11} />
+                                  <span>{subject.name}</span>
+                                </span>
+                              )}
+                              {item.exam_date && (
+                                <span className="text-[11px] text-[#C88A36] flex items-center gap-1 font-medium">
+                                  <Calendar size={11} />
+                                  <span>{new Date(item.exam_date).toLocaleDateString('ar-EG')}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-[8px] bg-[rgba(200,138,54,0.10)] text-[#C88A36] border border-[rgba(200,138,54,0.28)] shrink-0">
+                          {item.exam_type || 'اختبار'}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </section>
+            )}
+
+            {/* SECTION 3: ASSIGNMENTS */}
+            {(categoryFilter === 'all' || categoryFilter === 'assignments') && (
+              <section className="space-y-3">
+                {categoryFilter === 'all' && subjectFiltered.assignments.filter((a) => a.status !== 'done').length > 0 && (
+                  <h2 className="flex items-center gap-2 text-xs font-bold text-[#4EA87E]">
+                    <CheckSquare size={15} />
+                    <span>الواجبات والتكليفات</span>
+                  </h2>
+                )}
+
+                {categoryFilter === 'assignments' && subjectFiltered.assignments.length === 0 ? (
+                  <EmptyState
+                    title={currentSubject ? `لا توجد واجبات في ${currentSubject.name}` : 'لا توجد واجبات مسجلة حالياً'}
+                    subtitle="اضغط على زر إضافة مهمة لتسجيل واجب أو تكليف جديد"
+                    onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'assignments')}
+                  />
+                ) : (
+                  subjectFiltered.assignments.map((item) => {
+                    const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                    const isDone = item.status === 'done'
+
+                    return (
+                      <div
+                        key={`assign-${item.id}`}
+                        className={`aegis-panel p-4 flex items-center justify-between gap-3 transition-opacity ${
+                          isDone ? 'opacity-55' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus('assignments', item.id, item.status)}
+                            aria-label={isDone ? `إلغاء إتمام ${item.title}` : `تحديد ${item.title} كمكتمل`}
+                            className="w-11 h-11 -mr-2 flex items-center justify-center shrink-0 rounded-[10px]"
+                          >
+                            <span
+                              className={`w-6 h-6 rounded-[7px] flex items-center justify-center transition-colors border ${
+                                isDone
+                                  ? 'bg-[#4EA87E] border-[#4EA87E] text-[#0A0B0E]'
+                                  : 'bg-[#07080B] border-[rgba(236,238,242,0.22)] hover:border-[#4EA87E] text-transparent'
+                              }`}
+                            >
+                              <Check size={14} strokeWidth={2.5} />
+                            </span>
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold text-sm text-[#ECEEF2] truncate ${isDone ? 'line-through text-[#7D8594]' : ''}`}>
+                              {item.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {subject && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                                  <SubjectIcon subjectId={subject.id} size={11} />
+                                  <span>{subject.name}</span>
+                                </span>
+                              )}
+                              {item.due_date && (
+                                <span className="text-[11px] text-[#9CA3AF] flex items-center gap-1">
+                                  <Clock size={11} className="text-[#C88A36]" />
+                                  <span>{new Date(item.due_date).toLocaleDateString('ar-EG')}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-[8px] border shrink-0 ${
+                            item.priority === 'high'
+                              ? 'bg-[rgba(201,91,102,0.10)] text-[#E58992] border-[rgba(201,91,102,0.28)]'
+                              : item.priority === 'medium'
+                              ? 'bg-[rgba(200,138,54,0.10)] text-[#C88A36] border-[rgba(200,138,54,0.28)]'
+                              : 'bg-[#07080B] text-[#9CA3AF] border-[rgba(236,238,242,0.08)]'
+                          }`}
+                        >
+                          {item.priority === 'high' ? 'عاجل' : item.priority === 'medium' ? 'متوسط' : 'عادي'}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </section>
+            )}
+
+            {/* SECTION 4: LECTURES */}
+            {(categoryFilter === 'all' || categoryFilter === 'lectures') && (
+              <section className="space-y-3">
+                {categoryFilter === 'all' && subjectFiltered.lectures.filter((l) => l.status !== 'done').length > 0 && (
+                  <h2 className="flex items-center gap-2 text-xs font-bold text-[#5D8AA8]">
+                    <BookOpen size={15} />
+                    <span>المحاضرات والحصص</span>
+                  </h2>
+                )}
+
+                {categoryFilter === 'lectures' && subjectFiltered.lectures.length === 0 ? (
+                  <EmptyState
+                    title={currentSubject ? `لا توجد محاضرات في ${currentSubject.name}` : 'لا توجد محاضرات مسجلة'}
+                    subtitle="سجّل مواعيد حصصك ومحاضراتك القادمة لمتابعة الحضور"
+                    onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'lectures')}
+                  />
+                ) : (
+                  subjectFiltered.lectures.map((item) => {
+                    const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                    const isAttended = item.status === 'done'
+
+                    return (
+                      <div
+                        key={`lec-${item.id}`}
+                        className={`aegis-panel p-4 flex items-center justify-between gap-3 transition-opacity ${
+                          isAttended ? 'opacity-55' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus('lectures', item.id, item.status)}
+                            aria-label={isAttended ? `إلغاء حضور ${item.title}` : `تأكيد حضور ${item.title}`}
+                            className="w-11 h-11 -mr-2 flex items-center justify-center shrink-0 rounded-[10px]"
+                          >
+                            <span
+                              className={`w-6 h-6 rounded-[7px] flex items-center justify-center transition-colors border ${
+                                isAttended
+                                  ? 'bg-[#5D8AA8] border-[#5D8AA8] text-[#0A0B0E]'
+                                  : item.status === 'missed'
+                                  ? 'bg-[rgba(201,91,102,0.18)] border-[#C95B66] text-[#E58992]'
+                                  : 'bg-[#07080B] border-[rgba(236,238,242,0.22)] hover:border-[#5D8AA8] text-transparent'
+                              }`}
+                            >
+                              <Check size={14} strokeWidth={2.5} />
+                            </span>
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold text-sm text-[#ECEEF2] truncate ${isAttended ? 'line-through text-[#7D8594]' : ''}`}>
+                              {item.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {subject && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                                  <SubjectIcon subjectId={subject.id} size={11} />
+                                  <span>{subject.name}</span>
+                                </span>
+                              )}
+                              {item.date && (
+                                <span className="text-[11px] text-[#5D8AA8] flex items-center gap-1 font-medium">
+                                  <Calendar size={11} />
+                                  <span>{new Date(item.date).toLocaleDateString('ar-EG')}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-[8px] border shrink-0 ${
+                            isAttended
+                              ? 'bg-[rgba(78,168,126,0.10)] text-[#4EA87E] border-[rgba(78,168,126,0.28)]'
+                              : item.status === 'missed'
+                              ? 'bg-[rgba(201,91,102,0.10)] text-[#E58992] border-[rgba(201,91,102,0.28)]'
+                              : 'bg-[rgba(93,138,168,0.10)] text-[#5D8AA8] border-[rgba(93,138,168,0.28)]'
+                          }`}
+                        >
+                          {isAttended ? 'تم الحضور' : item.status === 'missed' ? 'فائتة' : 'قادمة'}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </section>
+            )}
+
+            {/* SECTION 5: BACKLOG */}
+            {(categoryFilter === 'all' || categoryFilter === 'backlog') && (
+              <section className="space-y-3">
+                {categoryFilter === 'all' && subjectFiltered.backlog.filter((b) => b.status !== 'cleared').length > 0 && (
+                  <h2 className="flex items-center gap-2 text-xs font-bold text-[#E58992]">
+                    <Clock size={15} />
+                    <span>التراكمات الدراسية</span>
+                  </h2>
+                )}
+
+                {categoryFilter === 'backlog' && subjectFiltered.backlog.length === 0 ? (
+                  <EmptyState
+                    title="لا توجد تراكمات مسجلة"
+                    subtitle="إذا تأخر عليك درس أو مراجعة يمكنك تسجيله هنا لجدولته لاحقاً"
+                    onAdd={() => openAddModalForSubject(selectedSubjectId || undefined, 'backlog')}
+                  />
+                ) : (
+                  subjectFiltered.backlog.map((item) => {
+                    const subject = SUBJECTS.find((s) => s.id === item.subject_id)
+                    const isCleared = item.status === 'cleared'
+
+                    return (
+                      <div
+                        key={`back-${item.id}`}
+                        className={`aegis-panel p-4 flex items-center justify-between gap-3 transition-opacity ${
+                          isCleared ? 'opacity-55' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus('backlog', item.id, item.status)}
+                            aria-label={isCleared ? `إعادة فتح ${item.title}` : `تصفية ${item.title}`}
+                            className="w-11 h-11 -mr-2 flex items-center justify-center shrink-0 rounded-[10px]"
+                          >
+                            <span
+                              className={`w-6 h-6 rounded-[7px] flex items-center justify-center transition-colors border ${
+                                isCleared
+                                  ? 'bg-[#4EA87E] border-[#4EA87E] text-[#0A0B0E]'
+                                  : 'bg-[#07080B] border-[rgba(236,238,242,0.22)] hover:border-[#C95B66] text-transparent'
+                              }`}
+                            >
+                              <Check size={14} strokeWidth={2.5} />
+                            </span>
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold text-sm text-[#ECEEF2] truncate ${isCleared ? 'line-through text-[#7D8594]' : ''}`}>
+                              {item.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {subject && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                                  <SubjectIcon subjectId={subject.id} size={11} />
+                                  <span>{subject.name}</span>
+                                </span>
+                              )}
+                              <span className="text-[11px] text-[#9CA3AF] flex items-center gap-1 font-tabular">
+                                <Clock size={11} className="text-[#E58992]" />
+                                <span><span dir="ltr">{item.estimated_hours || 1}h</span> تقديرية</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-[8px] border shrink-0 ${
+                            isCleared
+                              ? 'bg-[rgba(78,168,126,0.10)] text-[#4EA87E] border-[rgba(78,168,126,0.28)]'
+                              : 'bg-[rgba(201,91,102,0.10)] text-[#E58992] border-[rgba(201,91,102,0.28)]'
+                          }`}
+                        >
+                          {isCleared ? 'تمت التصفية' : 'متراكم'}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </section>
+            )}
+
+            {/* EMPTY OVERALL STATE */}
+            {categoryFilter === 'all' && categoryCounts.all === 0 && (
+              <EmptyState
+                title={currentSubject ? `لا توجد مهام معلقة في ${currentSubject.name}` : 'لا توجد مهام معلقة حالياً'}
+                subtitle="سجل مهامك أو مواعيد امتحاناتك القادمة لتبقى خطتك الدراسية منظمة"
+                onAdd={() => openAddModalForSubject(selectedSubjectId || undefined)}
+              />
+            )}
+          </div>
+        )}
+      </div>
 
       {/* ─── Spaced Repetition (SM-2) Interactive Recall Modal ─────────── */}
       <AnimatePresence>
         {reviewModalTopic && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[rgba(6,7,10,0.82)] backdrop-blur-md">
             <motion.div
-              initial={{ y: '100%', opacity: 0 }}
+              initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="w-full max-w-md bg-[#0e1424] border border-purple-500/30 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl relative"
+              exit={{ y: 24, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="sm2-modal-title"
+              className="w-full max-w-md bg-[#191C25] border border-[rgba(236,238,242,0.14)] rounded-t-[18px] sm:rounded-[16px] p-5 sm:p-6 shadow-[0_20px_48px_-8px_rgba(0,0,0,0.8)] relative"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center">
+              <div className="sm:hidden w-10 h-1 rounded-full bg-[rgba(236,238,242,0.18)] mx-auto mb-3" />
+
+              <div className="flex items-center justify-between pb-4 border-b border-[rgba(236,238,242,0.08)] mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-[10px] bg-[rgba(147,124,184,0.14)] border border-[rgba(147,124,184,0.32)] text-[#937CB8] flex items-center justify-center">
                     <Brain size={18} />
                   </div>
                   <div>
-                    <h3 className="font-black text-white text-sm">تقييم استرجاع المعلومة</h3>
-                    <span className="text-[10px] text-purple-300 font-bold">خوارزمية SM-2 للتكرار المتباعد</span>
+                    <h3 id="sm2-modal-title" className="font-bold text-[#ECEEF2] text-sm">تقييم استرجاع المعلومة</h3>
+                    <span className="text-[11px] text-[#937CB8] font-medium">خوارزمية SM-2 للتكرار المتباعد</span>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setReviewModalTopic(null)}
-                  className="p-1.5 rounded-xl glass text-slate-400 hover:text-white"
+                  aria-label="إغلاق التقييم"
+                  className="w-9 h-9 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2] flex items-center justify-center"
                 >
                   <X size={16} />
                 </button>
               </div>
 
-              {/* Topic Card Info */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 mb-4">
-                <p className="text-[10px] text-slate-400 mb-0.5">{reviewModalTopic.chapter || 'الدرس المستهدف'}</p>
-                <h4 className="font-black text-sm text-white">{reviewModalTopic.topic}</h4>
+              <div className="p-3.5 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] mb-4">
+                <p className="text-[11px] text-[#7D8594] mb-0.5">{reviewModalTopic.chapter || 'الدرس المستهدف'}</p>
+                <h4 className="font-semibold text-sm text-[#ECEEF2]">{reviewModalTopic.topic}</h4>
               </div>
 
-              <p className="text-xs text-slate-300 mb-3 font-medium">
-                قيم مدى سهولة تذكرك للدرس لتحديد موعد التكرار المتباعد القادم:
+              <p className="text-xs text-[#9CA3AF] mb-3">
+                قيّم مدى سهولة استرجاعك للدرس لتحديد موعد التكرار القادم:
               </p>
 
-              {/* 4 SM-2 Recall Grade Buttons */}
               <div className="space-y-2">
-                {/* Grade 5: Perfect */}
                 <button
+                  type="button"
                   disabled={reviewSubmitting}
                   onClick={() => handleRateReview(reviewModalTopic.id, 5)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(78,168,126,0.10)] hover:bg-[rgba(78,168,126,0.16)] border border-[rgba(78,168,126,0.30)] text-[#4EA87E] font-semibold text-xs transition-colors min-h-[46px]"
                 >
                   <span className="flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-emerald-400" />
+                    <CheckCircle2 size={16} />
                     <span>متقن وسهل جداً (درجة 5)</span>
                   </span>
-                  <span className="text-[10px] font-mono bg-emerald-500/20 px-2 py-0.5 rounded-lg text-emerald-200">
-                    +15 XP • تكرار ممتد
+                  <span dir="ltr" className="text-[11px] font-tabular px-2 py-0.5 rounded-[6px] bg-[rgba(78,168,126,0.14)]">
+                    +15 XP
                   </span>
                 </button>
 
-                {/* Grade 4: Good */}
                 <button
+                  type="button"
                   disabled={reviewSubmitting}
                   onClick={() => handleRateReview(reviewModalTopic.id, 4)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-300 font-bold text-xs transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(93,138,168,0.10)] hover:bg-[rgba(93,138,168,0.16)] border border-[rgba(93,138,168,0.30)] text-[#5D8AA8] font-semibold text-xs transition-colors min-h-[46px]"
                 >
                   <span className="flex items-center gap-2">
-                    <Check size={16} className="text-teal-400" />
+                    <Check size={16} />
                     <span>تذكرت بعد تفكير بسيط (درجة 4)</span>
                   </span>
-                  <span className="text-[10px] font-mono bg-teal-500/20 px-2 py-0.5 rounded-lg text-teal-200">
-                    +10 XP • مراجعة عادية
+                  <span dir="ltr" className="text-[11px] font-tabular px-2 py-0.5 rounded-[6px] bg-[rgba(93,138,168,0.14)]">
+                    +10 XP
                   </span>
                 </button>
 
-                {/* Grade 3: Hard */}
                 <button
+                  type="button"
                   disabled={reviewSubmitting}
                   onClick={() => handleRateReview(reviewModalTopic.id, 3)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(200,138,54,0.10)] hover:bg-[rgba(200,138,54,0.16)] border border-[rgba(200,138,54,0.30)] text-[#C88A36] font-semibold text-xs transition-colors min-h-[46px]"
                 >
                   <span className="flex items-center gap-2">
-                    <AlertCircle size={16} className="text-amber-400" />
+                    <AlertCircle size={16} />
                     <span>تذكرت بصعوبة (درجة 3)</span>
                   </span>
-                  <span className="text-[10px] font-mono bg-amber-500/20 px-2 py-0.5 rounded-lg text-amber-200">
-                    +5 XP • مراجعة قريبة
+                  <span dir="ltr" className="text-[11px] font-tabular px-2 py-0.5 rounded-[6px] bg-[rgba(200,138,54,0.14)]">
+                    +5 XP
                   </span>
                 </button>
 
-                {/* Grade 1: Forgotten */}
                 <button
+                  type="button"
                   disabled={reviewSubmitting}
                   onClick={() => handleRateReview(reviewModalTopic.id, 1)}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[10px] bg-[rgba(201,91,102,0.10)] hover:bg-[rgba(201,91,102,0.16)] border border-[rgba(201,91,102,0.30)] text-[#E58992] font-semibold text-xs transition-colors min-h-[46px]"
                 >
                   <span className="flex items-center gap-2">
-                    <HelpCircle size={16} className="text-rose-400" />
+                    <HelpCircle size={16} />
                     <span>نسيان تام أو خطأ (درجة 1)</span>
                   </span>
-                  <span className="text-[10px] font-mono bg-rose-500/20 px-2 py-0.5 rounded-lg text-rose-200">
-                    +2 XP • إعادة غداً
+                  <span dir="ltr" className="text-[11px] font-tabular px-2 py-0.5 rounded-[6px] bg-[rgba(201,91,102,0.14)]">
+                    +2 XP
                   </span>
                 </button>
               </div>
 
               {reviewSubmitting && (
-                <div className="absolute inset-0 bg-slate-950/85 rounded-t-3xl sm:rounded-3xl flex items-center justify-center gap-2 text-purple-400 text-xs font-bold">
-                  <Loader2 size={20} className="animate-spin" />
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="absolute inset-0 bg-[#0A0B0E]/85 rounded-t-[18px] sm:rounded-[16px] flex items-center justify-center gap-2 text-[#D4AF37] text-xs font-semibold"
+                >
+                  <Loader2 size={18} className="animate-spin" />
                   <span>جاري تحديث خوارزمية التكرار واحتساب الـ XP...</span>
                 </div>
               )}
@@ -1284,22 +1214,29 @@ export default function TasksPage() {
       {/* ─── Quick Add Item Modal ───────────────────────────────────────── */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[rgba(6,7,10,0.82)] backdrop-blur-md">
             <motion.div
-              initial={{ y: '100%', opacity: 0 }}
+              initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="w-full max-w-lg bg-[#0e1424] border border-slate-800 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              exit={{ y: 24, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-task-title"
+              className="w-full max-w-lg bg-[#191C25] border border-[rgba(236,238,242,0.14)] rounded-t-[18px] sm:rounded-[16px] p-5 sm:p-6 shadow-[0_20px_48px_-8px_rgba(0,0,0,0.8)] relative max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                <h3 className="font-black text-white text-base">إضافة مهمة جديدة</h3>
+              <div className="sm:hidden w-10 h-1 rounded-full bg-[rgba(236,238,242,0.18)] mx-auto mb-3" />
+
+              <div className="flex items-center justify-between pb-4 border-b border-[rgba(236,238,242,0.08)] mb-4">
+                <h3 id="add-task-title" className="font-bold text-[#ECEEF2] text-base">إضافة مهمة جديدة</h3>
                 <button
+                  type="button"
                   onClick={() => {
                     setShowAddModal(false)
                     setCreateError(null)
                   }}
-                  className="p-1.5 rounded-xl glass text-slate-400 hover:text-white"
+                  aria-label="إغلاق النموذج"
+                  className="w-9 h-9 rounded-[10px] bg-[#12141C] border border-[rgba(236,238,242,0.10)] text-[#9CA3AF] hover:text-[#ECEEF2] flex items-center justify-center"
                 >
                   <X size={16} />
                 </button>
@@ -1308,26 +1245,26 @@ export default function TasksPage() {
               <form onSubmit={handleCreateItem} className="space-y-4">
                 {/* Category Type Selector */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">نوع المهمة</label>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <span className="block text-xs font-semibold text-[#9CA3AF] mb-2">نوع المهمة</span>
+                  <div className="grid grid-cols-4 gap-2">
                     {[
-                      { key: 'assignments', label: 'واجب', icon: '📝' },
-                      { key: 'exams', label: 'امتحان', icon: '🎯' },
-                      { key: 'lectures', label: 'محاضرة', icon: '📚' },
-                      { key: 'backlog', label: 'متراكم', icon: '⏳' },
-                    ].map((cat) => (
+                      { key: 'assignments', label: 'واجب', Icon: CheckSquare },
+                      { key: 'exams', label: 'امتحان', Icon: Target },
+                      { key: 'lectures', label: 'محاضرة', Icon: BookOpen },
+                      { key: 'backlog', label: 'متراكم', Icon: Clock },
+                    ].map(({ key, label, Icon }) => (
                       <button
-                        key={cat.key}
+                        key={key}
                         type="button"
-                        onClick={() => setFormCategory(cat.key as any)}
-                        className={`p-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-1 ${
-                          formCategory === cat.key
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                            : 'bg-slate-900 border border-slate-800 text-slate-400'
+                        onClick={() => setFormCategory(key as any)}
+                        className={`p-2.5 rounded-[10px] text-xs font-semibold transition-colors flex flex-col items-center gap-1.5 min-h-[56px] border ${
+                          formCategory === key
+                            ? 'bg-[rgba(212,175,55,0.12)] border-[rgba(212,175,55,0.40)] text-[#ECEEF2]'
+                            : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
                         }`}
                       >
-                        <span>{cat.icon}</span>
-                        <span>{cat.label}</span>
+                        <Icon size={16} className={formCategory === key ? 'text-[#D4AF37]' : ''} />
+                        <span>{label}</span>
                       </button>
                     ))}
                   </div>
@@ -1335,30 +1272,37 @@ export default function TasksPage() {
 
                 {/* Subject Selector */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5">المادة المخصصة</label>
+                  <span className="block text-xs font-semibold text-[#9CA3AF] mb-2">المادة الدراسية</span>
                   <div className="grid grid-cols-2 gap-2">
-                    {SUBJECTS.map((s) => (
-                      <button
-                        type="button"
-                        key={s.id}
-                        onClick={() => setFormSubjectId(s.id)}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
-                          formSubjectId === s.id
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-white/30'
-                            : 'bg-slate-900 border border-slate-800 text-slate-400 hover:border-slate-750'
-                        }`}
-                      >
-                        <span>{s.icon}</span>
-                        <span>{s.name}</span>
-                      </button>
-                    ))}
+                    {SUBJECTS.map((s) => {
+                      const theme = getSubjectTheme(s.id)
+                      const isSel = formSubjectId === s.id
+                      return (
+                        <button
+                          type="button"
+                          key={s.id}
+                          onClick={() => setFormSubjectId(s.id)}
+                          className={`flex items-center gap-2.5 p-2.5 rounded-[10px] text-xs font-semibold transition-colors min-h-[44px] border ${
+                            isSel
+                              ? `bg-[#12141C] ${theme.border} text-[#ECEEF2]`
+                              : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
+                          }`}
+                        >
+                          <SubjectIcon subjectId={s.id} size={15} />
+                          <span>{s.name}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
                 {/* Title Input */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">عنوان المهمة / التكليف</label>
+                  <label htmlFor="task-title-input" className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
+                    عنوان المهمة / التكليف
+                  </label>
                   <input
+                    id="task-title-input"
                     type="text"
                     required
                     value={formTitle}
@@ -1372,7 +1316,7 @@ export default function TasksPage() {
                         ? 'مثال: ورشة عمل وحل تدريبات'
                         : 'مثال: مراجعة الوحدة الأولى وحل أسئلتها'
                     }
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                    className="w-full bg-[#07080B] border border-[rgba(236,238,242,0.12)] rounded-[10px] px-3.5 h-11 text-sm text-[#ECEEF2] placeholder-[#6B7280] focus:border-[#D4AF37]"
                     dir="auto"
                   />
                 </div>
@@ -1380,28 +1324,30 @@ export default function TasksPage() {
                 {/* Category-specific fields */}
                 {formCategory === 'backlog' ? (
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    <label htmlFor="task-hours-input" className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
                       الوقت المقدر للإنجاز (بالساعات)
                     </label>
                     <input
+                      id="task-hours-input"
                       type="number"
                       step="0.5"
                       min="0.5"
                       value={formHours}
                       onChange={(e) => setFormHours(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-indigo-500 font-mono"
+                      className="w-full bg-[#07080B] border border-[rgba(236,238,242,0.12)] rounded-[10px] px-3.5 h-11 text-sm text-[#ECEEF2] font-tabular focus:border-[#D4AF37]"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    <label htmlFor="task-date-input" className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">
                       {formCategory === 'exams' ? 'موعد الامتحان' : 'تاريخ التسليم / الموعد'}
                     </label>
                     <input
+                      id="task-date-input"
                       type="date"
                       value={formDueDate}
                       onChange={(e) => setFormDueDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-indigo-500 font-mono"
+                      className="w-full bg-[#07080B] border border-[rgba(236,238,242,0.12)] rounded-[10px] px-3.5 h-11 text-sm text-[#ECEEF2] font-tabular focus:border-[#D4AF37]"
                     />
                   </div>
                 )}
@@ -1409,21 +1355,21 @@ export default function TasksPage() {
                 {/* Priority Selector for Assignments */}
                 {formCategory === 'assignments' && (
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">الأولوية</label>
+                    <span className="block text-xs font-semibold text-[#9CA3AF] mb-1.5">الأولوية</span>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { key: 'high', label: 'عاجل 🔥' },
-                        { key: 'medium', label: 'متوسط ⚡' },
-                        { key: 'low', label: 'عادي 📘' },
+                        { key: 'high', label: 'عاجل' },
+                        { key: 'medium', label: 'متوسط' },
+                        { key: 'low', label: 'عادي' },
                       ].map((p) => (
                         <button
                           key={p.key}
                           type="button"
                           onClick={() => setFormPriority(p.key)}
-                          className={`py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          className={`py-2 rounded-[10px] text-xs font-semibold transition-colors min-h-[40px] border ${
                             formPriority === p.key
-                              ? 'bg-amber-600 text-white'
-                              : 'bg-slate-900 border border-slate-800 text-slate-400'
+                              ? 'bg-[rgba(200,138,54,0.14)] border-[rgba(200,138,54,0.40)] text-[#C88A36]'
+                              : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF]'
                           }`}
                         >
                           {p.label}
@@ -1433,24 +1379,21 @@ export default function TasksPage() {
                   </div>
                 )}
 
-                {/* Error Message */}
                 {createError && (
-                  <div className="w-full p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold text-center">
-                    ❌ {createError}
+                  <div
+                    role="alert"
+                    className="w-full p-3 rounded-[10px] bg-[rgba(201,91,102,0.12)] border border-[rgba(201,91,102,0.32)] text-[#E58992] text-xs font-semibold text-center"
+                  >
+                    {createError}
                   </div>
                 )}
 
-                {/* Submit button */}
                 <button
                   type="submit"
                   disabled={submitting || !formTitle.trim()}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold text-xs shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4"
+                  className="w-full py-3 rounded-[10px] bg-[#D4AF37] hover:bg-[#E0C058] disabled:opacity-45 text-[#0A0B0E] font-semibold text-xs transition-colors flex items-center justify-center gap-2 min-h-[44px] mt-2"
                 >
-                  {submitting ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <span>حفظ في مساحة المادة</span>
-                  )}
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <span>حفظ في مساحة المادة</span>}
                 </button>
               </form>
             </motion.div>
@@ -1473,17 +1416,19 @@ function EmptyState({
   onAdd: () => void
 }) {
   return (
-    <div className="glass-card rounded-3xl p-8 text-center border-slate-800/80">
-      <div className="w-12 h-12 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto text-slate-400 mb-3">
-        <CheckSquare size={24} />
+    <div className="aegis-panel p-8 sm:p-10 text-center">
+      <div className="w-12 h-12 rounded-[12px] bg-[#191C25] border border-[rgba(236,238,242,0.10)] flex items-center justify-center mx-auto text-[#7D8594] mb-3.5">
+        <CheckSquare size={22} strokeWidth={1.75} />
       </div>
-      <h3 className="font-bold text-sm text-slate-200">{title}</h3>
-      <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">{subtitle}</p>
+      <h3 className="font-semibold text-sm text-[#ECEEF2]">{title}</h3>
+      <p className="text-xs text-[#9CA3AF] mt-1.5 max-w-sm mx-auto leading-relaxed">{subtitle}</p>
       <button
+        type="button"
         onClick={onAdd}
-        className="mt-4 px-4 py-2 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold hover:bg-indigo-600/40 transition-colors"
+        className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] bg-[#191C25] hover:bg-[#202430] border border-[rgba(212,175,55,0.32)] text-[#ECEEF2] text-xs font-semibold transition-colors min-h-[40px]"
       >
-        إضافة الآن +
+        <Plus size={14} className="text-[#D4AF37]" />
+        <span>إضافة الآن</span>
       </button>
     </div>
   )

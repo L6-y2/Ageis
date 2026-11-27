@@ -42,16 +42,18 @@ export default async function HomePage() {
   })
 
   return (
-    <main className="min-h-screen pb-28 pt-6 px-4 sm:px-6 max-w-5xl mx-auto">
-      {/* ─── Top Brand Header ──────────────────────────────────────────────── */}
-      <HomeHeader
-        today={today}
-        name={profile.name || 'عمر'}
-        streak={profile.current_streak}
-      />
+    <main className="min-h-screen lg:pr-60 bg-[#0A0B0E]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-5 sm:pt-7 lg:pt-9 pb-24 lg:pb-12">
+        {/* ─── Scholarly Editorial Masthead ──────────────────────────────────── */}
+        <HomeHeader
+          today={today}
+          name={profile.name || 'عمر'}
+          streak={profile.current_streak}
+        />
 
-      {/* ─── Main Analytics & Subjects Dashboard ─────────────────────────────── */}
-      <DashboardOverview analytics={analytics} profile={profile} />
+        {/* ─── Asymmetric Command & Telemetry Workspace ──────────────────────── */}
+        <DashboardOverview analytics={analytics} profile={profile} />
+      </div>
 
       <BottomNav />
     </main>

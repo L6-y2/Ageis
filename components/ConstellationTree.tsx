@@ -5,20 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles,
   Star,
-  CheckCircle2,
   Clock,
   BookOpen,
-  Circle,
-  Layers,
   Compass,
-  ChevronDown,
-  Check,
-  FileText,
-  Flame,
-  Award,
   Zap,
+  CheckCircle2,
 } from 'lucide-react'
-import type { SubjectMasteryData, ChapterData, TopicData } from '@/lib/types'
+import type { SubjectMasteryData, TopicData } from '@/lib/types'
+import { getSubjectTheme } from '@/components/AcademicIcons'
 
 interface Props {
   subject: SubjectMasteryData
@@ -29,51 +23,6 @@ interface Props {
   activeFilter?: string
 }
 
-// Color palettes for constellation nebulae based on subject
-const NEBULA_THEMES: Record<
-  number,
-  {
-    gradient: string
-    glowColor: string
-    beamColor: string
-    accentHex: string
-    starGradient: string
-  }
-> = {
-  // Arabic (Emerald/Teal)
-  6: {
-    gradient: 'from-emerald-500/20 via-teal-600/10 to-transparent',
-    glowColor: 'rgba(16, 185, 129, 0.4)',
-    beamColor: '#10b981',
-    accentHex: '#10b981',
-    starGradient: 'from-emerald-300 via-teal-400 to-emerald-600',
-  },
-  // English (Purple/Violet)
-  8: {
-    gradient: 'from-purple-500/20 via-violet-600/10 to-transparent',
-    glowColor: 'rgba(168, 85, 247, 0.4)',
-    beamColor: '#a855f7',
-    accentHex: '#a855f7',
-    starGradient: 'from-purple-300 via-violet-400 to-purple-600',
-  },
-  // History (Amber/Gold)
-  9: {
-    gradient: 'from-amber-500/20 via-orange-600/10 to-transparent',
-    glowColor: 'rgba(245, 158, 11, 0.4)',
-    beamColor: '#f59e0b',
-    accentHex: '#f59e0b',
-    starGradient: 'from-amber-300 via-yellow-400 to-amber-600',
-  },
-  // Programming (Blue/Cyan)
-  7: {
-    gradient: 'from-cyan-500/20 via-blue-600/10 to-transparent',
-    glowColor: 'rgba(6, 182, 212, 0.4)',
-    beamColor: '#06b6d4',
-    accentHex: '#06b6d4',
-    starGradient: 'from-cyan-300 via-sky-400 to-blue-600',
-  },
-}
-
 export default function ConstellationTree({
   subject,
   subjectColor,
@@ -82,17 +31,16 @@ export default function ConstellationTree({
   searchQuery = '',
   activeFilter = 'all',
 }: Props) {
-  const theme = NEBULA_THEMES[subject.subject_id] || NEBULA_THEMES[6]
+  void subjectColor
+  const theme = getSubjectTheme(subject.subject_id)
   const [activeClusterId, setActiveClusterId] = useState<number | 'all'>('all')
   const [showLegend, setShowLegend] = useState(false)
 
-  // Sort chapters cleanly by chapter_num
   const sortedChapters = useMemo(() => {
     if (!subject?.chapters) return []
     return [...subject.chapters].sort((a, b) => (a.chapter_num ?? 0) - (b.chapter_num ?? 0))
   }, [subject?.chapters])
 
-  // Flattened topics with up-to-date local stages
   const allTopicsWithLocal = useMemo(() => {
     return sortedChapters.flatMap((c) =>
       c.topics.map((t) => ({
@@ -105,7 +53,6 @@ export default function ConstellationTree({
     )
   }, [sortedChapters, localTopics])
 
-  // Constellation luminosity stats
   const stats = useMemo(() => {
     const total = allTopicsWithLocal.length
     const mastered = allTopicsWithLocal.filter((t) => t.mastery_level >= 5).length
@@ -114,106 +61,91 @@ export default function ConstellationTree({
     const unlit = allTopicsWithLocal.filter((t) => t.mastery_level === 0).length
     const pct = total ? Math.round((mastered / total) * 100) : 0
 
-    let statusTitle = 'سديم في طور التكوّن 🪐'
-    if (pct === 100) statusTitle = 'كوكبة مكتملة أسطورية 👑'
-    else if (pct >= 75) statusTitle = 'مجرة ساطعة متوهجة ✨'
-    else if (pct >= 50) statusTitle = 'كوكبة مشعة 🌟'
-    else if (pct >= 25) statusTitle = 'كوكبة ناشئة 🔭'
+    let statusTitle = 'طور التكوّن'
+    if (pct === 100) statusTitle = 'كوكبة مكتملة'
+    else if (pct >= 75) statusTitle = 'مجرة ساطعة'
+    else if (pct >= 50) statusTitle = 'كوكبة مشعة'
+    else if (pct >= 25) statusTitle = 'كوكبة ناشئة'
 
     return { total, mastered, reviewing, learning, unlit, pct, statusTitle }
   }, [allTopicsWithLocal])
 
   return (
-    <div className="relative rounded-3xl overflow-hidden border border-slate-800/90 bg-[#070b16] shadow-2xl">
-      {/* ─── Deep Space Ambient Cosmic Background ─────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Cosmic Nebula Glow */}
-        <div
-          className={`absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br ${theme.gradient} rounded-full blur-3xl opacity-60`}
-        />
-        <div
-          className={`absolute top-1/2 -left-32 w-80 h-80 bg-gradient-to-tr ${theme.gradient} rounded-full blur-3xl opacity-40`}
-        />
-        <div
-          className="absolute -bottom-20 right-1/4 w-72 h-72 rounded-full blur-3xl opacity-30"
-          style={{ backgroundColor: theme.glowColor }}
-        />
-
-        {/* CSS Twinkling Celestial Starfield Pattern */}
-        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900/0 via-slate-900/50 to-black">
-          <svg className="w-full h-full opacity-30" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="starfield" width="120" height="120" patternUnits="userSpaceOnUse">
-                <circle cx="15" cy="20" r="0.8" fill="#ffffff" opacity="0.6" />
-                <circle cx="85" cy="35" r="1.2" fill="#ffffff" opacity="0.8" />
-                <circle cx="45" cy="75" r="0.6" fill="#a5b4fc" opacity="0.5" />
-                <circle cx="105" cy="95" r="1" fill="#fef08a" opacity="0.7" />
-                <circle cx="65" cy="110" r="0.7" fill="#ffffff" opacity="0.4" />
-                <circle cx="30" cy="90" r="1.4" fill="#38bdf8" opacity="0.9" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#starfield)" />
-          </svg>
-        </div>
+    <div className="relative rounded-[16px] overflow-hidden border border-[rgba(236,238,242,0.10)] bg-[#0A0B0E] shadow-[0_8px_24px_-4px_rgba(0,0,0,0.6)]">
+      {/* Subtle Starfield Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <svg className="w-full h-full opacity-25" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="aegis-starfield" width="140" height="140" patternUnits="userSpaceOnUse">
+              <circle cx="18" cy="24" r="0.8" fill="#ECEEF2" opacity="0.5" />
+              <circle cx="92" cy="38" r="1.1" fill="#D4AF37" opacity="0.65" />
+              <circle cx="48" cy="84" r="0.6" fill="#9CA3AF" opacity="0.45" />
+              <circle cx="115" cy="108" r="0.9" fill="#D4AF37" opacity="0.5" />
+              <circle cx="70" cy="122" r="0.7" fill="#ECEEF2" opacity="0.4" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#aegis-starfield)" />
+        </svg>
       </div>
 
-      {/* ─── Cosmic Header & Constellation Overview ───────────────────── */}
-      <div className="relative z-10 p-5 sm:p-6 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
+      {/* Observatory Header */}
+      <div className="relative z-10 p-5 sm:p-6 border-b border-[rgba(236,238,242,0.08)] bg-[#12141C]/90">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-purple-600/30 border border-indigo-400/30 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(99,102,241,0.3)]">
-              🌌
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-[10px] bg-[#191C25] border border-[rgba(212,175,55,0.32)] flex items-center justify-center text-[#D4AF37] shrink-0">
+              <Sparkles size={20} strokeWidth={1.75} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold text-[#ECEEF2]">
                   كوكبة {subject.subject_name} الفلكية
                 </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-[6px] bg-[rgba(212,175,55,0.10)] text-[#D4AF37] border border-[rgba(212,175,55,0.28)]">
                   {stats.statusTitle}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                توهج النجوم يمثل مستوى إتقانك لكل درس وتكليف في المنهج
+              <p className="text-xs text-[#9CA3AF] mt-0.5">
+                إضاءة النجوم تمثل درجة إتقان كل درس في المنهج
               </p>
             </div>
           </div>
 
-          {/* Luminosity percentage pill */}
-          <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
             <button
+              type="button"
               onClick={() => setShowLegend(!showLegend)}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-bold text-slate-300 hover:text-white flex items-center gap-1.5 transition-all"
+              aria-expanded={showLegend}
+              className="px-3.5 py-2 rounded-[10px] bg-[#191C25] border border-[rgba(236,238,242,0.12)] hover:border-[rgba(236,238,242,0.22)] text-xs font-semibold text-[#ECEEF2] flex items-center gap-1.5 transition-colors min-h-[40px]"
             >
-              <Compass size={13} className="text-indigo-400" />
+              <Compass size={14} className="text-[#D4AF37]" />
               <span>دليل النجوم</span>
             </button>
-            <div className="px-3.5 py-1.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 text-center shadow-lg">
-              <span className="block text-base sm:text-lg font-black text-amber-300 font-mono tracking-tight leading-none">
-                {`${stats.pct}%`}
+            <div className="px-3.5 py-1.5 rounded-[10px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-center">
+              <span dir="ltr" className="block text-base font-bold text-[#D4AF37] font-tabular leading-none">
+                {stats.pct}%
               </span>
-              <span className="text-[9px] text-slate-400 font-bold">توهج الكوكبة</span>
+              <span className="block text-[10px] text-[#7D8594] mt-1 font-medium">الإضاءة</span>
             </div>
           </div>
         </div>
 
         {/* Luminosity Progress Bar */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 px-1">
-            <span className="flex items-center gap-1">
-              <Sparkles size={12} className="text-amber-400" />
-              <span>{`${stats.mastered} نجماً ساطعاً من أصل ${stats.total}`}</span>
+          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+            <span>
+              <span dir="ltr" className="font-tabular text-[#ECEEF2] font-semibold">{stats.mastered}</span> نجم متقن من أصل{' '}
+              <span dir="ltr" className="font-tabular text-[#ECEEF2]">{stats.total}</span>
             </span>
-            <span className="text-slate-500 font-mono">
-              {stats.pct === 100 ? 'تم اكتمال السماء بالكامل ✨' : `${stats.total - stats.mastered} نجم في الانتظار`}
+            <span className="font-tabular text-[11px] text-[#7D8594]">
+              {stats.pct === 100 ? 'اكتملت الكوكبة' : `${stats.total - stats.mastered} في الانتظار`}
             </span>
           </div>
-          <div className="w-full h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden relative">
+          <div className="w-full h-2 rounded-full bg-[#07080B] border border-[rgba(236,238,242,0.07)] overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${stats.pct}%` }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-              className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-amber-300 rounded-full shadow-[0_0_12px_rgba(56,189,248,0.8)]"
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full xp-shimmer rounded-full"
             />
           </div>
         </div>
@@ -225,46 +157,43 @@ export default function ConstellationTree({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden mt-3 pt-3 border-t border-slate-800/80"
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden mt-4 pt-4 border-t border-[rgba(236,238,242,0.07)]"
             >
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-amber-300 to-yellow-400 shadow-[0_0_8px_#facc15] inline-block" />
+                <div className="flex items-center gap-2 p-2.5 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.07)]">
+                  <span className="w-3 h-3 rounded-full bg-[#D4AF37] shrink-0" />
                   <div>
-                    <p className="font-bold text-slate-200">متقن تماماً</p>
-                    <p className="text-[9px] text-slate-400">مستوى 5 (سوبرنوفا)</p>
+                    <p className="font-semibold text-[#ECEEF2]">متقن تماماً</p>
+                    <p className="text-[10px] text-[#7D8594]">مستوى 5</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_8px_#f97316] inline-block" />
+                <div className="flex items-center gap-2 p-2.5 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.07)]">
+                  <span className="w-3 h-3 rounded-full bg-[#C88A36] shrink-0" />
                   <div>
-                    <p className="font-bold text-slate-200">تحت المراجعة</p>
-                    <p className="text-[9px] text-slate-400">مستوى 4 (نجم مشتعل)</p>
+                    <p className="font-semibold text-[#ECEEF2]">تحت المراجعة</p>
+                    <p className="text-[10px] text-[#7D8594]">مستوى 4</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-sky-400 to-cyan-500 shadow-[0_0_8px_#38bdf8] inline-block" />
+                <div className="flex items-center gap-2 p-2.5 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.07)]">
+                  <span className="w-3 h-3 rounded-full bg-[#5D8AA8] shrink-0" />
                   <div>
-                    <p className="font-bold text-slate-200">تم التلخيص والحل</p>
-                    <p className="text-[9px] text-slate-400">مستوى 2-3 (نجم أزرق)</p>
+                    <p className="font-semibold text-[#ECEEF2]">تلخيص وحل</p>
+                    <p className="text-[10px] text-[#7D8594]">مستوى 2–3</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-purple-400 to-indigo-500 shadow-[0_0_8px_#a855f7] inline-block" />
+                <div className="flex items-center gap-2 p-2.5 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.07)]">
+                  <span className="w-3 h-3 rounded-full bg-[#937CB8] shrink-0" />
                   <div>
-                    <p className="font-bold text-slate-200">تمت القراءة</p>
-                    <p className="text-[9px] text-slate-400">مستوى 1 (استيقاظ)</p>
+                    <p className="font-semibold text-[#ECEEF2]">تمت القراءة</p>
+                    <p className="text-[10px] text-[#7D8594]">مستوى 1</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="w-3.5 h-3.5 rounded-full bg-slate-700 border border-slate-600 inline-block" />
+                <div className="flex items-center gap-2 p-2.5 rounded-[8px] bg-[#07080B] border border-[rgba(236,238,242,0.07)] col-span-2 sm:col-span-1">
+                  <span className="w-3 h-3 rounded-full bg-[#2A303E] border border-[rgba(236,238,242,0.18)] shrink-0" />
                   <div>
-                    <p className="font-bold text-slate-200">لم يبدأ</p>
-                    <p className="text-[9px] text-slate-400">مستوى 0 (نجم خامد)</p>
+                    <p className="font-semibold text-[#ECEEF2]">لم يبدأ</p>
+                    <p className="text-[10px] text-[#7D8594]">مستوى 0</p>
                   </div>
                 </div>
               </div>
@@ -272,18 +201,19 @@ export default function ConstellationTree({
           )}
         </AnimatePresence>
 
-        {/* ─── Star Cluster Quick Selector Tabs ───────────────────────── */}
+        {/* Star Cluster Quick Selector Tabs */}
         <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           <button
+            type="button"
             onClick={() => setActiveClusterId('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 min-h-[38px] border ${
               activeClusterId === 'all'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-[rgba(212,175,55,0.12)] border-[rgba(212,175,55,0.38)] text-[#ECEEF2]'
+                : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
             }`}
           >
-            <Compass size={13} />
-            <span>عرض كل العناقيد ({sortedChapters.length})</span>
+            <Compass size={13} className={activeClusterId === 'all' ? 'text-[#D4AF37]' : ''} />
+            <span>كل العناقيد (<span dir="ltr" className="font-tabular">{sortedChapters.length}</span>)</span>
           </button>
 
           {sortedChapters.map((ch) => {
@@ -295,34 +225,35 @@ export default function ConstellationTree({
 
             return (
               <button
+                type="button"
                 key={ch.chapter_id}
                 onClick={() => setActiveClusterId(ch.chapter_id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+                className={`px-3 py-2 rounded-[10px] text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 min-h-[38px] border ${
                   isSelected
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                    ? 'bg-[#191C25] border-[rgba(212,175,55,0.38)] text-[#ECEEF2]'
                     : isCompleted
-                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    ? 'bg-[rgba(78,168,126,0.08)] border-[rgba(78,168,126,0.28)] text-[#4EA87E]'
+                    : 'bg-[#07080B] border-[rgba(236,238,242,0.08)] text-[#9CA3AF] hover:text-[#ECEEF2]'
                 }`}
               >
-                <span>{`عنقود ${ch.chapter_num}`}</span>
-                <span className="text-[10px] font-mono opacity-80">{`(${chMastered}/${ch.topics.length})`}</span>
-                {isCompleted && <span className="text-[10px]">✨</span>}
+                <span>عنقود <span dir="ltr" className="font-tabular">{ch.chapter_num}</span></span>
+                <span dir="ltr" className="text-[10px] font-tabular opacity-80">
+                  ({chMastered}/{ch.topics.length})
+                </span>
+                {isCompleted && <CheckCircle2 size={12} />}
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* ─── Main Constellation Graph & Winding Star Paths ────────────── */}
+      {/* Main Constellation Graph & Winding Star Paths */}
       <div className="relative z-10 p-4 sm:p-8 space-y-12">
         {sortedChapters
           .filter((ch) => activeClusterId === 'all' || activeClusterId === ch.chapter_id)
           .map((chapter) => {
-            // Sort topics in textbook order
             const clusterTopics = [...chapter.topics].sort((a, b) => a.id - b.id)
 
-            // Filter topics if search or filter query active
             const filteredClusterTopics = clusterTopics.filter((t) => {
               const lvl = localTopics[t.id]?.mastery_level ?? t.mastery_level
               const matchesQuery = !searchQuery || t.topic.toLowerCase().includes(searchQuery.toLowerCase())
@@ -349,185 +280,150 @@ export default function ConstellationTree({
 
             return (
               <div key={chapter.chapter_id} className="relative">
-                {/* ── Chapter Milestone Gateway / Galaxy Node ── */}
+                {/* Chapter Milestone Gateway */}
                 <div className="relative mb-8 text-center max-w-lg mx-auto">
                   <div
-                    className={`inline-flex items-center gap-3 px-5 py-2.5 rounded-full backdrop-blur-xl border transition-all shadow-xl ${
+                    className={`inline-flex items-center gap-3 px-5 py-3 rounded-[12px] border ${
                       isClusterFullyMastered
-                        ? 'bg-emerald-950/70 border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
-                        : 'bg-slate-900/90 border-slate-700 shadow-[0_0_20px_rgba(0,0,0,0.5)]'
+                        ? 'bg-[#12141C] border-[rgba(78,168,126,0.38)]'
+                        : 'bg-[#12141C] border-[rgba(236,238,242,0.12)]'
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${
+                      className={`w-8 h-8 rounded-[8px] flex items-center justify-center font-bold text-xs font-tabular ${
                         isClusterFullyMastered
-                          ? 'bg-emerald-400 text-slate-950 shadow-[0_0_12px_#34d399]'
-                          : 'bg-indigo-600 text-white'
+                          ? 'bg-[rgba(78,168,126,0.15)] text-[#4EA87E] border border-[rgba(78,168,126,0.35)]'
+                          : 'bg-[#191C25] text-[#D4AF37] border border-[rgba(212,175,55,0.30)]'
                       }`}
                     >
-                      {isClusterFullyMastered ? '✨' : chapter.chapter_num}
+                      {isClusterFullyMastered ? <CheckCircle2 size={15} /> : chapter.chapter_num}
                     </div>
 
                     <div className="text-right">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400">
-                          {`العنقود النجمي ${chapter.chapter_num}`}
+                        <span className={`text-[11px] font-semibold ${theme.text}`}>
+                          العنقود <span dir="ltr" className="font-tabular">{chapter.chapter_num}</span>
                         </span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-800 text-slate-400">
-                          {`${masteredInCluster}/${clusterTopics.length} نجم متوهج`}
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#07080B] text-[#9CA3AF] font-tabular">
+                          <span dir="ltr">{masteredInCluster}/{clusterTopics.length}</span>
                         </span>
                       </div>
-                      <h3 className="text-xs sm:text-sm font-black text-white">{chapter.chapter_name}</h3>
+                      <h3 className="text-xs sm:text-sm font-semibold text-[#ECEEF2]">{chapter.chapter_name}</h3>
                     </div>
 
-                    <div className="mr-auto pr-2 pl-1 border-r border-slate-800">
-                      <span className="text-xs font-black font-mono text-amber-300">{`${clusterPct}%`}</span>
+                    <div className="mr-auto pr-3 border-r border-[rgba(236,238,242,0.08)]">
+                      <span dir="ltr" className="text-xs font-bold font-tabular text-[#D4AF37]">
+                        {clusterPct}%
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* ── Winding Star Path (Cosmic Node Network) ── */}
-                <div className="relative max-w-md mx-auto space-y-6">
-                  {/* Vertical Neon Conduit / Line Behind Nodes */}
-                  <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 w-0.5 pointer-events-none">
-                    <div className="w-full h-full bg-gradient-to-b from-indigo-500/20 via-slate-700/30 to-indigo-500/20" />
-                  </div>
+                {/* Winding Star Path */}
+                <div className="relative max-w-md mx-auto space-y-5">
+                  <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 w-px bg-[rgba(236,238,242,0.10)] pointer-events-none" />
 
                   {filteredClusterTopics.map((topic, idx) => {
                     const level = localTopics[topic.id]?.mastery_level ?? topic.mastery_level
                     const isMastered = level >= 5
                     const isReviewing = level === 4
                     const isLearning = level >= 1 && level < 4
-                    const isUnlit = level === 0
-
-                    // Alternating cosmic orbits: Left (idx % 2 === 0) vs Right (idx % 2 === 1)
                     const isLeft = idx % 2 === 0
 
                     return (
                       <div
                         key={topic.id}
                         className={`relative flex items-center gap-3 sm:gap-4 ${
-                          isLeft ? 'flex-row' : 'flex-row-reverse text-left'
+                          isLeft ? 'flex-row' : 'flex-row-reverse'
                         }`}
                       >
-                        {/* 🌟 1. Celestial Star Orb (Interactive Button) */}
-                        <div className="relative flex-shrink-0 z-20 mx-auto sm:mx-0">
+                        {/* Celestial Star Orb */}
+                        <div className="relative shrink-0 z-20">
                           <button
+                            type="button"
                             onClick={() => onSelectTopic(topic)}
-                            className="group relative flex items-center justify-center focus:outline-none transition-transform active:scale-95"
-                            title={`درس: ${topic.topic} (مستوى ${level})`}
+                            aria-label={`درس ${topic.topic}، المستوى ${level} من 5`}
+                            className={`w-11 h-11 rounded-full flex items-center justify-center font-bold transition-colors border ${
+                              isMastered
+                                ? 'bg-[#D4AF37] border-[#E0C058] text-[#0A0B0E]'
+                                : isReviewing
+                                ? 'bg-[#191C25] border-[#C88A36] text-[#C88A36]'
+                                : isLearning
+                                ? 'bg-[#191C25] border-[#5D8AA8] text-[#5D8AA8]'
+                                : 'bg-[#12141C] border-[rgba(236,238,242,0.14)] text-[#7D8594] hover:text-[#ECEEF2]'
+                            }`}
                           >
-                            {/* Outer Glow Halo for Mastered Stars */}
-                            {isMastered && (
-                              <motion.div
-                                animate={{ scale: [1, 1.25, 1], opacity: [0.5, 0.85, 0.5] }}
-                                transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                                className="absolute -inset-2.5 rounded-full blur-md"
-                                style={{ backgroundColor: theme.glowColor }}
-                              />
-                            )}
-
-                            {/* Rotating celestial ring for reviewing stars */}
-                            {isReviewing && (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ repeat: Infinity, duration: 6, ease: 'linear' }}
-                                className="absolute -inset-1.5 rounded-full border border-dashed border-amber-400/80"
-                              />
-                            )}
-
-                            {/* Core Star Orb */}
-                            <div
-                              className={`w-12 h-12 rounded-full flex items-center justify-center font-black transition-all shadow-xl relative z-10 ${
-                                isMastered
-                                  ? 'bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 text-slate-950 shadow-[0_0_20px_#facc15] ring-2 ring-white/60'
-                                  : isReviewing
-                                  ? 'bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 text-white shadow-[0_0_15px_#f97316] ring-1 ring-amber-300/40'
-                                  : isLearning
-                                  ? 'bg-gradient-to-tr from-cyan-600 via-sky-500 to-blue-400 text-white shadow-[0_0_12px_#38bdf8] ring-1 ring-cyan-300/40'
-                                  : 'bg-slate-900 border border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
-                              }`}
-                            >
-                              {/* 4-point Diamond Star Flare for Mastered */}
-                              {isMastered ? (
-                                <Star size={20} className="fill-slate-950 text-slate-950 animate-pulse" />
-                              ) : isReviewing ? (
-                                <Clock size={18} className="text-white" />
-                              ) : isLearning ? (
-                                <BookOpen size={18} className="text-white" />
-                              ) : (
-                                <span className="text-xs font-mono font-bold">{idx + 1}</span>
-                              )}
-                            </div>
-
-                            {/* Level 5 Supernova Rays */}
-                            {isMastered && (
-                              <span className="absolute -top-1 -right-1 text-xs">✨</span>
+                            {isMastered ? (
+                              <Star size={18} strokeWidth={2} className="fill-[#0A0B0E]" />
+                            ) : isReviewing ? (
+                              <Clock size={16} />
+                            ) : isLearning ? (
+                              <BookOpen size={16} />
+                            ) : (
+                              <span dir="ltr" className="text-xs font-tabular">{idx + 1}</span>
                             )}
                           </button>
                         </div>
 
-                        {/* 📝 2. Floating Star Info Capsule / Card */}
-                        <motion.div
-                          whileHover={{ scale: 1.02 }}
+                        {/* Star Info Card (Accessible Button) */}
+                        <button
+                          type="button"
                           onClick={() => onSelectTopic(topic)}
-                          className={`flex-1 p-3.5 rounded-2xl cursor-pointer transition-all border backdrop-blur-md relative z-10 ${
+                          className={`flex-1 text-right p-3.5 rounded-[12px] transition-colors border relative z-10 ${
                             isMastered
-                              ? 'bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-slate-950/90 border-emerald-500/40 hover:border-emerald-400/70 shadow-lg'
+                              ? 'bg-[#12141C] border-[rgba(212,175,55,0.34)] hover:bg-[#191C25]'
                               : isReviewing
-                              ? 'bg-gradient-to-r from-amber-950/60 via-slate-900/80 to-slate-950/90 border-amber-500/40 hover:border-amber-400/70 shadow-lg'
+                              ? 'bg-[#12141C] border-[rgba(200,138,54,0.34)] hover:bg-[#191C25]'
                               : isLearning
-                              ? 'bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/90 border-sky-500/30 hover:border-sky-400/60'
-                              : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700/80 text-slate-400'
+                              ? 'bg-[#12141C] border-[rgba(93,138,168,0.32)] hover:bg-[#191C25]'
+                              : 'bg-[#12141C] border-[rgba(236,238,242,0.08)] hover:bg-[#191C25] hover:border-[rgba(236,238,242,0.18)]'
                           }`}
                         >
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-950/70 border border-slate-800 text-slate-400">
-                              {`نجم #${idx + 1}`}
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="text-[10px] font-tabular px-2 py-0.5 rounded-[6px] bg-[#07080B] border border-[rgba(236,238,242,0.08)] text-[#9CA3AF]">
+                              نجم <span dir="ltr">#{idx + 1}</span>
                             </span>
 
-                            {/* Status Pill */}
                             <span
-                              className={`text-[9px] font-bold px-2 py-0.5 rounded-full font-mono ${
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-[6px] font-tabular border ${
                                 isMastered
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  ? 'bg-[rgba(212,175,55,0.12)] text-[#D4AF37] border-[rgba(212,175,55,0.30)]'
                                   : isReviewing
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                  ? 'bg-[rgba(200,138,54,0.12)] text-[#C88A36] border-[rgba(200,138,54,0.30)]'
                                   : isLearning
-                                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                                  : 'bg-slate-800 text-slate-400'
+                                  ? 'bg-[rgba(93,138,168,0.12)] text-[#5D8AA8] border-[rgba(93,138,168,0.30)]'
+                                  : 'bg-[#07080B] text-[#7D8594] border-[rgba(236,238,242,0.07)]'
                               }`}
                             >
                               {isMastered
-                                ? 'متقن تماماً (5/5)'
+                                ? 'متقن 5/5'
                                 : isReviewing
-                                ? 'تحت المراجعة (4/5)'
+                                ? 'مراجعة 4/5'
                                 : isLearning
-                                ? `قيد التعلم (${level}/5)`
-                                : 'خامد لم يبدأ (0/5)'}
+                                ? `قيد التعلم ${level}/5`
+                                : '0/5'}
                             </span>
                           </div>
 
-                          <h4 className="text-xs sm:text-sm font-black text-slate-100 line-clamp-2">
+                          <h4 className="text-xs sm:text-sm font-semibold text-[#ECEEF2] line-clamp-2">
                             {topic.topic}
                           </h4>
 
-                          {/* Action prompt */}
-                          <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
-                            <span className="flex items-center gap-1 hover:text-indigo-300 transition-colors">
-                              <Zap size={11} className="text-amber-400" />
-                              <span>انقر لإشعال النجم أو المراجعة</span>
+                          <div className="mt-2 pt-2 border-t border-[rgba(236,238,242,0.06)] flex items-center justify-between text-[11px] text-[#7D8594]">
+                            <span className="flex items-center gap-1">
+                              <Zap size={11} className="text-[#D4AF37]" />
+                              <span>تحديث المرحلة</span>
                             </span>
                             {topic.next_review && (
-                              <span className="font-mono text-[9px] text-slate-500">
-                                {`مراجعة: ${new Date(topic.next_review).toLocaleDateString('ar-EG', {
+                              <span className="text-[10px]">
+                                {new Date(topic.next_review).toLocaleDateString('ar-EG', {
                                   month: 'short',
                                   day: 'numeric',
-                                })}`}
+                                })}
                               </span>
                             )}
                           </div>
-                        </motion.div>
+                        </button>
                       </div>
                     )
                   })}
@@ -537,11 +433,11 @@ export default function ConstellationTree({
           })}
       </div>
 
-      {/* ─── Footer Galaxy Signature ──────────────────────────────────── */}
-      <div className="relative z-10 p-4 text-center border-t border-slate-800/80 bg-slate-950/80 text-xs text-slate-500 font-mono">
+      {/* Footer Observatory Signature */}
+      <div className="relative z-10 p-4 text-center border-t border-[rgba(236,238,242,0.07)] bg-[#12141C] text-xs text-[#7D8594]">
         <p className="flex items-center justify-center gap-1.5">
-          <Sparkles size={13} className="text-amber-400" />
-          <span>كل جلسة مذاكرة في غرفة التركيز تشعل نجمة جديدة في سماء إيجيس</span>
+          <Sparkles size={13} className="text-[#D4AF37]" />
+          <span>كل جلسة مذاكرة وإتقان تضيء نجماً جديداً في خريطة المنهج</span>
         </p>
       </div>
     </div>

@@ -18,10 +18,15 @@ import {
   BookOpen,
   Award,
   Zap,
+  X,
+  Check,
+  Swords,
+  BarChart2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { soundscapeEngine } from '@/lib/soundscapes'
 import { SUBJECTS } from '@/lib/types'
+import { SubjectIcon } from '@/components/AcademicIcons'
 
 // ─── 3D Isometric Jukebox Wireframe Block SVG (Exact from Minecraft Video Screenshot) ───
 function MinecraftJukeboxWireframe() {
@@ -285,18 +290,22 @@ export default function MinecraftStudyRoom({
 
         {/* Subject Switcher Button */}
         <button
+          type="button"
           onClick={() => setShowSubjectPicker(!showSubjectPicker)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/45 hover:bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white transition-all active:scale-95 shadow-lg"
+          aria-label="تغيير المادة الدراسية"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/45 hover:bg-black/70 backdrop-blur-md border border-white/20 text-xs font-bold text-white transition-all active:scale-95 shadow-lg min-h-[40px]"
           title="تغيير المادة الدراسية"
         >
-          <span>{subject.icon}</span>
+          <SubjectIcon subjectId={subject.id} size={14} />
           <span className="hidden sm:inline">{subject.name}</span>
         </button>
 
         {/* Sound Toggle (Mute/Unmute Rain & Fire Soundscapes) */}
         <button
+          type="button"
           onClick={toggleSound}
-          className={`p-2 sm:p-2.5 rounded-xl backdrop-blur-md border transition-all active:scale-95 shadow-lg ${
+          aria-label={soundEnabled ? 'كتم أصوات المطر والمدفأة' : 'تشغيل أصوات المطر والمدفأة'}
+          className={`w-10 h-10 rounded-xl backdrop-blur-md border flex items-center justify-center transition-all active:scale-95 shadow-lg ${
             soundEnabled
               ? 'bg-emerald-600/70 border-emerald-400 text-white shadow-emerald-600/30'
               : 'bg-black/45 border-white/20 text-white/60 hover:text-white'
@@ -308,8 +317,10 @@ export default function MinecraftStudyRoom({
 
         {/* Fullscreen Button */}
         <button
+          type="button"
           onClick={onToggleFullscreen}
-          className="p-2 sm:p-2.5 rounded-xl bg-black/45 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white transition-all active:scale-95 shadow-lg"
+          aria-label={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
+          className="w-10 h-10 rounded-xl bg-black/45 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all active:scale-95 shadow-lg"
           title={isFullscreen ? 'الخروج من ملء الشاشة' : 'ملء الشاشة بالكامل'}
         >
           {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -324,7 +335,7 @@ export default function MinecraftStudyRoom({
             textShadow: '1px 1px 0px #000',
           }}
         >
-          <span>{subject.icon}</span>
+          <SubjectIcon subjectId={subject.id} size={13} />
           <span>{subject.name}</span>
           <span className="text-white/40">•</span>
           <span className="text-white/80">{running ? 'جلسة جارية' : 'متوقف مؤقتاً'}</span>
@@ -482,18 +493,23 @@ export default function MinecraftStudyRoom({
 
         {/* ─── 8. CRUCIAL: Database Session End & XP Claim Button ──────────── */}
         <button
+          type="button"
           onClick={onCompleteSession}
           disabled={sessionLoading}
-          className="flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:brightness-110 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-emerald-900/60 border-2 border-emerald-300 transition-all cursor-pointer"
+          className="flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:brightness-110 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-emerald-900/60 border-2 border-emerald-300 transition-all cursor-pointer min-h-[44px]"
           style={{
             textShadow: '1px 1px 0px #000',
           }}
         >
-          <CheckCircle2 size={18} className="text-white" />
+          {sessionLoading ? (
+            <CheckCircle2 size={18} className="text-white" />
+          ) : (
+            <Swords size={18} className="text-white" />
+          )}
           <span>
             {sessionLoading
               ? 'جاري الحفظ في قاعدة البيانات...'
-              : '⚔️ إنهاء الجلسة واحتساب XP في قاعدة البيانات'}
+              : 'إنهاء الجلسة واحتساب XP في قاعدة البيانات'}
           </span>
         </button>
       </div>
@@ -506,6 +522,9 @@ export default function MinecraftStudyRoom({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="اختر مادة الجلسة"
               className="w-full max-w-sm rounded-2xl bg-stone-900/95 border-2 border-stone-600 p-5 shadow-2xl text-white"
             >
               <div className="flex items-center justify-between pb-3 border-b border-stone-700 mb-4">
@@ -514,33 +533,40 @@ export default function MinecraftStudyRoom({
                   <span>اختر مادة الجلسة</span>
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setShowSubjectPicker(false)}
-                  className="text-stone-400 hover:text-white text-xs"
+                  aria-label="إغلاق"
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-stone-400 hover:text-white text-xs"
                 >
-                  ✕ إغلاق
+                  <X size={14} />
+                  <span>إغلاق</span>
                 </button>
               </div>
 
               <div className="space-y-2 max-h-72 overflow-y-auto">
                 {SUBJECTS.map((s) => (
                   <button
+                    type="button"
                     key={s.id}
                     onClick={() => {
                       if (onSelectSubject) onSelectSubject(s.id)
                       setShowSubjectPicker(false)
                     }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                    className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
                       s.id === subject.id
                         ? 'bg-emerald-600/40 border-emerald-400 text-white shadow-md'
                         : 'bg-stone-800/60 border-stone-700 text-stone-300 hover:bg-stone-800 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-base">{s.icon}</span>
+                      <SubjectIcon subjectId={s.id} size={15} />
                       <span>{s.name}</span>
                     </div>
                     {s.id === subject.id && (
-                      <span className="text-emerald-400 text-[10px]">المادة الحالية ✓</span>
+                      <span className="text-emerald-400 text-[10px] inline-flex items-center gap-1">
+                        <span>الحالية</span>
+                        <Check size={12} />
+                      </span>
                     )}
                   </button>
                 ))}
@@ -558,6 +584,9 @@ export default function MinecraftStudyRoom({
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="اكتمال الجلسة"
               className="w-full max-w-md rounded-2xl bg-stone-900/95 border-2 border-emerald-400 p-6 shadow-2xl text-center text-white flex flex-col items-center gap-4"
             >
               <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/20">
@@ -566,7 +595,7 @@ export default function MinecraftStudyRoom({
 
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-emerald-300 tracking-wider">
-                  🏆 اكتملت الجلسة بنجاح!
+                  اكتملت الجلسة بنجاح
                 </h3>
                 <p className="text-xs text-stone-300 mt-1">
                   تم تسجيل الجلسة بنجاح واحتساب نقاط الـ XP في قاعدة بيانات Supabase.
@@ -577,7 +606,7 @@ export default function MinecraftStudyRoom({
               <div className="grid grid-cols-3 gap-2 w-full">
                 <div className="p-3 rounded-xl bg-stone-800 border border-stone-700 flex flex-col items-center">
                   <span className="text-xs text-stone-400">الـ XP المكتسب</span>
-                  <span className="text-base font-black text-emerald-400 mt-0.5">
+                  <span dir="ltr" className="text-base font-black text-emerald-400 mt-0.5">
                     +{earnedXp || Math.max(10, Math.round((totalSeconds / 60) * 1.5))} XP
                   </span>
                 </div>
@@ -592,7 +621,7 @@ export default function MinecraftStudyRoom({
                 <div className="p-3 rounded-xl bg-stone-800 border border-stone-700 flex flex-col items-center">
                   <span className="text-xs text-stone-400">التتابع</span>
                   <span className="text-base font-black text-amber-400 mt-0.5 flex items-center gap-1">
-                    <span>🔥</span>
+                    <Flame size={14} />
                     <span>{sessionStats?.streak || 2} يوم</span>
                   </span>
                 </div>
@@ -601,20 +630,23 @@ export default function MinecraftStudyRoom({
               {/* Actions */}
               <div className="flex items-center gap-3 w-full mt-2">
                 <button
+                  type="button"
                   onClick={() => {
                     if (onCloseCompletionModal) onCloseCompletionModal()
                     onReset()
                   }}
-                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-all active:scale-95 border border-emerald-400"
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-all active:scale-95 border border-emerald-400 flex items-center justify-center gap-1.5 min-h-[44px]"
                 >
-                  🔄 جلسة جديدة
+                  <RotateCcw size={14} />
+                  <span>جلسة جديدة</span>
                 </button>
 
                 <Link
                   href="/"
-                  className="flex-1 py-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs transition-all border border-stone-600 text-center"
+                  className="flex-1 py-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs transition-all border border-stone-600 flex items-center justify-center gap-1.5 min-h-[44px]"
                 >
-                  📊 لوحة المتابعة
+                  <BarChart2 size={14} />
+                  <span>لوحة المتابعة</span>
                 </Link>
               </div>
             </motion.div>
